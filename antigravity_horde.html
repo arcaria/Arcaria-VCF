@@ -1,0 +1,2073 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity Horde</title>
+
+    <!-- External Libs -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/9.1.2/marked.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --glass-bg: rgba(15, 23, 42, 0.65);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --danger: #ef4444;
+            --success: #10b981;
+        }
+
+        body {
+            background: radial-gradient(circle at top left, #1e1b4b, #0f172a, #020617);
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+        }
+
+        /* Glass Components */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-panel:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-input {
+            background: rgba(15, 23, 42, 0.5);
+            /* tailwind bg-slate-900/50 fallback */
+            border: 1px solid rgba(51, 65, 85, 0.5);
+            /* tailwind border-slate-700/50 */
+            border-radius: 0.75rem;
+            /* rounded-xl */
+            padding: 0.75rem;
+            outline: none;
+            transition: all 0.2s;
+            color: white;
+        }
+
+        .glass-input::placeholder {
+            color: #64748b;
+        }
+
+        .glass-input:focus {
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5);
+            /* ring-violet-500/50 */
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .glass-btn {
+            background-color: #7c3aed;
+            color: white;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            transition: all 0.2s;
+            box-shadow: 0 10px 15px -3px rgba(76, 29, 149, 0.2);
+        }
+
+        .glass-btn:hover {
+            background-color: #6d28d9;
+        }
+
+        .glass-btn:active {
+            transform: scale(0.95);
+        }
+
+        .glass-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.4s ease-out forwards;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Utility */
+        .view-hidden {
+            display: none !important;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Ensure tailwind hidden works if loading slow */
+    </style>
+</head>
+
+<body class="flex flex-col h-screen overflow-hidden">
+
+    <!-- Header / Navbar -->
+    <header class="glass sticky top-0 z-50 h-16 shrink-0">
+        <div class="h-full px-4 sm:px-6 flex items-center justify-between">
+            <!-- Brand -->
+            <div class="flex items-center gap-3">
+                <div
+                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/20">
+                    <i class="fas fa-cube text-white text-sm"></i>
+                </div>
+                <h1 class="text-lg font-bold tracking-tight hidden sm:block">
+                    Antigravity <span class="text-violet-400 font-light">Horde</span>
+                </h1>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex items-center bg-slate-900/40 rounded-full p-1 border border-white/5 backdrop-blur-md">
+                <button onclick="app.router.navigate('generate')"
+                    class="nav-btn px-4 py-1.5 rounded-full text-sm font-medium transition-all text-violet-200 hover:bg-white/5 data-[active]:bg-violet-600 data-[active]:text-white shadow-sm"
+                    id="nav-generate">
+                    Generate
+                </button>
+                <button onclick="app.router.navigate('pending')"
+                    class="nav-btn px-4 py-1.5 rounded-full text-sm font-medium transition-all text-violet-200 hover:bg-white/5 data-[active]:bg-violet-600 data-[active]:text-white shadow-sm"
+                    id="nav-pending">
+                    Pending
+                    <span id="queue-count" class="hidden ml-1 text-[10px] bg-white/20 px-1.5 rounded-full">0</span>
+                </button>
+                <button onclick="app.router.navigate('gallery')"
+                    class="nav-btn px-4 py-1.5 rounded-full text-sm font-medium transition-all text-violet-200 hover:bg-white/5 data-[active]:bg-violet-600 data-[active]:text-white shadow-sm"
+                    id="nav-gallery">
+                    Gallery
+                </button>
+                <button onclick="app.router.navigate('settings')"
+                    class="nav-btn px-4 py-1.5 rounded-full text-sm font-medium transition-all text-violet-200 hover:bg-white/5 data-[active]:bg-violet-600 data-[active]:text-white shadow-sm"
+                    id="nav-settings">
+                    Settings
+                </button>
+            </nav>
+
+            <!-- User Status -->
+            <div class="flex items-center gap-4 text-xs font-mono">
+                <button onclick="window.app.openNotifications()"
+                    class="relative text-slate-400 hover:text-white transition-colors">
+                    <i class="fas fa-bell text-lg"></i>
+                    <span id="notification-dot"
+                        class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full hidden"></span>
+                </button>
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/30 border border-white/5">
+                    <div id="horde-status-dot" class="w-2 h-2 rounded-full bg-slate-600 transition-colors"></div>
+                    <span id="user-kudos" class="opacity-70">---</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow relative overflow-hidden text-slate-200">
+
+        <!-- View: Generate -->
+        <div id="view-generate"
+            class="view-section absolute inset-0 overflow-y-auto p-4 sm:p-6 lg:p-8 fade-in custom-scroll">
+            <div class="max-w-7xl mx-auto grid lg:grid-cols-12 gap-6 lg:gap-8">
+                <!-- Main Form -->
+                <div class="lg:col-span-8 space-y-6">
+                    <div class="glass p-6 rounded-2xl border-t border-white/10">
+                        <div class="flex justify-between items-center mb-4">
+                            <label class="text-sm font-medium text-violet-200">Positive Prompt</label>
+                            <span class="text-xs text-slate-500" id="prompt-count">0 chars</span>
+                        </div>
+                        <textarea id="prompt-input"
+                            class="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl p-4 min-h-[100px] focus:ring-2 ring-violet-500/50 outline-none transition-all resize-y text-slate-200 placeholder:text-slate-600 font-light mb-4"
+                            placeholder="A masterpiece, detailed, 8k resolution..."></textarea>
+
+                        <div class="flex justify-between items-center mb-2">
+                            <label class="text-xs font-medium text-red-300">Negative Prompt</label>
+                        </div>
+                        <textarea id="negative-prompt-input"
+                            class="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl p-3 min-h-[60px] focus:ring-2 ring-red-500/30 outline-none transition-all resize-y text-slate-300 placeholder:text-slate-700 font-light text-sm"
+                            placeholder="ugly, blurry, low quality, deformed..."></textarea>
+                    </div>
+
+                    <!-- Dynamic Form Container -->
+                    <div id="dynamic-form-container" class="space-y-4">
+                        <!-- Injected by FormEngine -->
+                    </div>
+                </div>
+
+                <!-- Sidebar / Quick Actions -->
+                <div class="lg:col-span-4 space-y-6">
+                    <div class="glass p-5 rounded-2xl sticky top-6">
+                        <div class="space-y-4">
+                            <div>
+                                <label
+                                    class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Model</label>
+                                <select id="model-select"
+                                    class="w-full bg-slate-900/80 border border-slate-700 rounded-lg p-2.5 text-sm outline-none focus:border-violet-500 text-slate-300">
+                                    <option value="" disabled selected>Loading Models...</option>
+                                </select>
+                            </div>
+
+                            <!-- Managers -->
+                            <div>
+                                <label
+                                    class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 block">Managers</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button onclick="window.app.openStylesModal()"
+                                        class="glass-btn bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2">
+                                        <i class="fas fa-paint-brush mr-1"></i> Styles
+                                    </button>
+                                    <button onclick="window.app.openPresetsModal()"
+                                        class="glass-btn bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2">
+                                        <i class="fas fa-bookmark mr-1"></i> Presets
+                                    </button>
+                                </div>
+                                <button onclick="window.app.saveCurrentAsPreset()"
+                                    class="w-full mt-2 glass-btn bg-slate-800 hover:bg-slate-700 text-slate-400 text-xs py-2 border-dashed border border-slate-600">
+                                    <i class="fas fa-plus mr-1"></i> Save Current Settings
+                                </button>
+                            </div>
+
+                            <button id="btn-generate"
+                                class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-violet-900/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2 group">
+                                <span>Generate</span>
+                                <i class="fas fa-bolt text-yellow-300 group-hover:animate-pulse"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Pending -->
+        <div id="view-pending" class="view-section absolute inset-0 p-4 sm:p-8 hidden flex flex-col h-full">
+            <div class="max-w-5xl mx-auto w-full h-full flex flex-col">
+                <div class="flex justify-between items-end mb-6 shrink-0">
+                    <div class="flex items-center gap-4">
+                        <h2 class="text-2xl font-bold text-white">Queue</h2>
+                        <div class="bg-slate-900/50 p-1 rounded-lg flex gap-1">
+                            <button onclick="window.app.setQueueFilter('all')" id="qf-all"
+                                class="text-[10px] px-2 py-1 rounded bg-slate-700 text-white transition-colors">All</button>
+                            <button onclick="window.app.setQueueFilter('waiting')" id="qf-waiting"
+                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Waiting</button>
+                            <button onclick="window.app.setQueueFilter('processing')" id="qf-processing"
+                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Processing</button>
+                            <button onclick="window.app.setQueueFilter('done')" id="qf-done"
+                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Finished</button>
+                            <button onclick="window.app.setQueueFilter('error')" id="qf-error"
+                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Error</button>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <button onclick="window.app.openQueueSettings()"
+                            class="glass-btn text-xs px-2 py-1 text-slate-400 hover:text-white"><i
+                                class="fas fa-cog"></i></button>
+                        <button class="text-xs text-slate-400 hover:text-white transition-colors"
+                            onclick="if(window.app.queue) window.app.queue.clearFinished()">Clear Finished</button>
+                    </div>
+                </div>
+                <div id="queue-list" class="grid gap-4 overflow-y-auto min-h-0 pr-2 pb-20">
+                    <!-- Queue Items -->
+                    <div class="text-center py-20 opacity-30">
+                        <i class="fas fa-wind text-4xl mb-3"></i>
+                        <p>No active generations</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Gallery -->
+        <div id="view-gallery" class="view-section absolute inset-0 overflow-y-auto p-4 sm:p-8 hidden">
+            <div class="max-w-7xl mx-auto h-full flex flex-col">
+                <div class="flex justify-between items-center mb-6 shrink-0">
+                    <h2 class="text-2xl font-bold text-white">Gallery</h2>
+                    <div class="flex gap-2">
+                        <select id="gallery-date-filter"
+                            class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1 text-xs text-slate-300">
+                            <option>All Dates</option>
+                        </select>
+                        <button class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1 rounded-lg text-xs">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                    <!-- Gallery Items -->
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Settings -->
+        <div id="view-settings" class="view-section absolute inset-0 overflow-y-auto p-4 sm:p-8 hidden">
+            <div class="max-w-3xl mx-auto glass p-8 rounded-3xl">
+                <h2 class="text-2xl font-bold mb-8 flex items-center gap-3">
+                    <i class="fas fa-sliders-h text-violet-400"></i> Local Configuration
+                </h2>
+
+                <!-- Settings Form -->
+                <div class="space-y-8">
+                    <!-- Horde Section -->
+                    <section class="space-y-4">
+                        <h3
+                            class="text-sm font-semibold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">
+                            AI Horde Connection</h3>
+                        <div class="grid gap-4">
+                            <div>
+                                <label class="block text-sm mb-1 text-slate-300">API Key</label>
+                                <div class="flex gap-2">
+                                    <input type="password" id="setting-horde-key" class="glass-input w-full font-mono"
+                                        placeholder="0000000000">
+                                    <button class="glass-btn bg-slate-700 hover:bg-slate-600" title="Reveal"><i
+                                            class="fas fa-eye"></i></button>
+                                </div>
+                                <p class="text-[10px] text-slate-500 mt-1">Leave as 0000000000 for anonymous mode
+                                    (slower)</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Data Section -->
+                    <section class="space-y-4">
+                        <h3
+                            class="text-sm font-semibold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">
+                            Data Storage</h3>
+                        <div class="grid gap-4">
+                            <div>
+                                <label class="block text-sm mb-1 text-slate-300">GitHub Personal Access Token
+                                    (PAT)</label>
+                                <input type="password" id="setting-gh-token" class="glass-input w-full font-mono"
+                                    placeholder="github_pat_...">
+                            </div>
+                            <div>
+                                <label class="block text-sm mb-1 text-slate-300">Private Gallery Repo</label>
+                                <input type="text" id="setting-gh-repo" class="glass-input w-full font-mono"
+                                    placeholder="username/repo-name">
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Discord Section -->
+                    <section class="space-y-4">
+                        <h3
+                            class="text-sm font-semibold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">
+                            Integrations</h3>
+                        <div class="grid gap-4">
+                            <div>
+                                <label class="block text-sm mb-1 text-slate-300">Discord Webhook URL</label>
+                                <input type="password" id="setting-discord-url" class="glass-input w-full font-mono"
+                                    placeholder="https://discord.com/api/webhooks/...">
+                                <p class="text-[10px] text-slate-500 mt-1">Used for 'Send to Discord' button.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Design Tool Link -->
+                    <section class="pt-4 border-t border-white/10">
+                        <button onclick="app.router.navigate('designer')"
+                            class="w-full py-4 rounded-xl border-2 border-dashed border-slate-700 hover:border-violet-500 hover:bg-violet-500/10 transition-all text-slate-400 hover:text-violet-300 font-medium flex flex-col items-center gap-2">
+                            <i class="fas fa-edit text-xl"></i>
+                            <span>Open Dynamic Form Designer</span>
+                        </button>
+                    </section>
+
+                    <div class="pt-4 flex justify-end">
+                        <button id="btn-save-settings" class="glass-btn bg-emerald-600 hover:bg-emerald-500 px-8">Save
+                            All Settings</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- View: Designer -->
+        <div id="view-designer" class="view-section absolute inset-0 overflow-y-auto p-4 hidden">
+            <!-- Placeholder for Designer -->
+            <div class="max-w-6xl mx-auto h-full flex flex-col glass rounded-2xl overflow-hidden">
+                <div class="p-4 border-b border-white/10 bg-slate-900/50 flex justify-between items-center">
+                    <h3 class="font-bold">Form Designer</h3>
+                    <button onclick="app.router.navigate('settings')" class="text-sm hover:text-white text-slate-400"><i
+                            class="fas fa-times mr-1"></i> Close</button>
+                </div>
+                <div class="flex-grow flex min-h-0">
+                    <div class="w-1/2 border-r border-white/10 p-0 h-full">
+                        <textarea id="designer-textarea"
+                            class="w-full h-full bg-slate-950 text-emerald-400 font-mono text-xs p-4 focus:outline-none resize-none"
+                            placeholder="// Paste JSON Schema here..."></textarea>
+                    </div>
+                    <div id="designer-preview" class="w-1/2 bg-slate-900/50 p-6 h-full overflow-y-auto custom-scroll">
+                        <div class="text-center opacity-50 mt-20">Live Preview Area</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- === SCRIPTS === -->
+
+    <!-- 1. Defaults -->
+    <script>
+        window.DEFAULT_FORM_CONFIG = [
+            {
+                "type": "group",
+                "label": "Image Settings",
+                "open": true,
+                "children": [
+                    { "type": "number", "key": "width", "label": "Width", "default": 512, "step": 64, "min": 64, "max": 1024 },
+                    { "type": "number", "key": "height", "label": "Height", "default": 512, "step": 64, "min": 64, "max": 1024 }
+                ]
+            },
+            {
+                "type": "group",
+                "label": "Advanced Parameters",
+                "open": false,
+                "children": [
+                    { "type": "number", "key": "steps", "label": "Steps", "default": 30, "min": 1, "max": 50 },
+                    { "type": "number", "key": "cfg_scale", "label": "Guidance Scale (CFG)", "default": 7, "step": 0.5, "min": 1, "max": 20 },
+                    { "type": "select", "key": "sampler_name", "label": "Sampler", "default": "k_euler_a", "options": ["k_euler_a", "k_lms", "k_dpm_2", "k_dpmpp_2s_a"] },
+                    { "type": "text", "key": "seed", "label": "Seed", "placeholder": "Empty for random" }
+                ]
+            },
+            { "type": "textarea", "key": "notes", "label": "Personal Notes", "user_only": true, "placeholder": "This text is not sent to the AI..." }
+        ];
+
+        window.DEFAULT_STYLES = {
+            "Cinematic": "{prompt}, cinematic lighting, 8k, highly detailed, dramatic atmosphere",
+            "Anime": "{prompt}, anime style, cel shaded, vibrant colors, studio ghibli inspired",
+            "Digital Art": "{prompt}, digital art, trending on artstation, concept art, sharp focus"
+        };
+    </script>
+
+    <!-- 2. Settings Store -->
+    <script>
+        const DEFAULTS = {
+            horde: { apiKey: '0000000000', apiUrl: 'https://aihorde.net/api/v2' },
+            github: { profiles: [], activeProfileId: null },
+            discord: { webhooks: [], activeWebhookId: null },
+            gallery: { itemsPerPage: 20 }
+        };
+
+        class SettingsStore {
+            constructor() { this.data = this.load(); }
+            load() {
+                const stored = localStorage.getItem('AG_HORDE_SETTINGS');
+                if (!stored) return JSON.parse(JSON.stringify(DEFAULTS));
+                return { ...DEFAULTS, ...JSON.parse(stored) };
+            }
+            save() { localStorage.setItem('AG_HORDE_SETTINGS', JSON.stringify(this.data)); }
+
+            getHordeKey() { return this.data.horde.apiKey; }
+            setHordeKey(key) { this.data.horde.apiKey = key || '0000000000'; this.save(); }
+            getHordeUrl() { return this.data.horde.apiUrl; }
+
+            addGitHubProfile(name, token, repo) {
+                const id = crypto.randomUUID();
+                this.data.github.profiles.push({ id, name, token, repo });
+                if (!this.data.github.activeProfileId) this.data.github.activeProfileId = id;
+                this.save();
+                return id;
+            }
+            getActiveGitHub() { return this.data.github.profiles.find(p => p.id === this.data.github.activeProfileId); }
+
+            addDiscordWebhook(name, url) {
+                const id = crypto.randomUUID();
+                this.data.discord.webhooks.push({ id, name, url });
+                if (!this.data.discord.activeWebhookId) this.data.discord.activeWebhookId = id;
+                this.save();
+                return id;
+            }
+            getActiveDiscord() { return this.data.discord.webhooks.find(w => w.id === this.data.discord.activeWebhookId); }
+        }
+        window.settingsStore = new SettingsStore();
+    </script>
+
+    <!-- 3. Horde Client -->
+    <script>
+        class HordeClient {
+            constructor() { this.agent = 'AntigravityHorde:v0.0.1:UnknownUser'; }
+
+            _getHeaders() {
+                return {
+                    'apikey': window.settingsStore.getHordeKey(),
+                    'Client-Agent': this.agent,
+                    'Content-Type': 'application/json'
+                };
+            }
+
+            async getHeartbeat() {
+                try {
+                    const res = await fetch(`${window.settingsStore.getHordeUrl()}/status/heartbeat`);
+                    return res.ok;
+                } catch (e) { return false; }
+            }
+
+            async getUserInfo() {
+                try {
+                    const res = await fetch(`${window.settingsStore.getHordeUrl()}/find_user`, { headers: this._getHeaders() });
+                    if (!res.ok) throw new Error("User lookup failed");
+                    return await res.json();
+                } catch (e) { return null; }
+            }
+
+            async getModels() {
+                try {
+                    const res = await fetch(`${window.settingsStore.getHordeUrl()}/status/models?type=image`);
+                    if (!res.ok) return [];
+                    return await res.json();
+                } catch (e) { return []; }
+            }
+
+            async generateImage(prompt, formParams, model) {
+                // List of keys that go in the ROOT of the payload (not in params{})
+                const TOP_LEVEL_KEYS = new Set([
+                    'nsfw', 'censor_nsfw', 'trusted_workers', 'slow_workers', 'workers',
+                    'worker_blacklist', 'models', 'source_image', 'source_processing',
+                    'source_mask', 'r2', 'shared', 'replacement_filter', 'dry_run',
+                    'proxied_account', 'disable_batching', 'webhook', 'blacklisted_workers'
+                ]);
+
+                // 1. Defaults
+                const payload = {
+                    prompt: prompt,
+                    models: [model], // Default to sidebar model
+                    params: { n: 1 },
+                    nsfw: true,
+                    censor_nsfw: false,
+                    shared: true
+                };
+
+                // 2. Dynamic Merge
+                // Iterate over every value from the Dynamic Form and place it correctly
+                for (const [key, value] of Object.entries(formParams)) {
+                    // Skip empty/undefined values if desired, or send them (Horde usually ok with defaults)
+                    if (value === undefined || value === null || value === "") continue;
+
+                    if (TOP_LEVEL_KEYS.has(key)) {
+                        // Special handling for 'models' if it comes from form (override sidebar)
+                        if (key === 'models') {
+                            payload.models = Array.isArray(value) ? value : [value];
+                        } else {
+                            payload[key] = value;
+                        }
+                    } else {
+                        // Everything else goes into params{}
+                        payload.params[key] = value;
+                    }
+                }
+
+                console.log("Sending Payload:", payload); // Debug for user
+
+                const res = await fetch(`${window.settingsStore.getHordeUrl()}/generate/async`, {
+                    method: 'POST', headers: this._getHeaders(), body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || "Generation request failed");
+                }
+                return await res.json();
+            }
+
+            async checkStatus(uuid) {
+                const res = await fetch(`${window.settingsStore.getHordeUrl()}/generate/check/${uuid}`);
+                return await res.json();
+            }
+
+            async getResult(uuid) {
+                const res = await fetch(`${window.settingsStore.getHordeUrl()}/generate/status/${uuid}`);
+                return await res.json();
+            }
+
+            async cancelRequest(uuid) {
+                const res = await fetch(`${window.settingsStore.getHordeUrl()}/generate/status/${uuid}`, {
+                    method: 'DELETE',
+                    headers: this._getHeaders()
+                });
+                return await res.json();
+            }
+        }
+        window.hordeClient = new HordeClient();
+    </script>
+
+    <!-- 4. Storage Client -->
+    <script>
+        class StorageClient {
+            async uploadImage(blob, filename, folder) {
+                const gh = window.settingsStore.getActiveGitHub();
+                if (!gh) throw new Error("No configured GitHub Profile");
+                const [owner, repo] = gh.repo.split('/');
+                const path = `${folder}/${filename}`;
+
+                const reader = new FileReader();
+                const base64 = await new Promise((resolve) => {
+                    reader.onload = e => resolve(e.target.result.split(',')[1]);
+                    reader.readAsDataURL(blob);
+                });
+
+                const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${gh.token}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Auto-upload: ${filename}`, content: base64 })
+                });
+                if (!res.ok) throw new Error("GitHub Upload Failed");
+                return await res.json();
+            }
+
+            async uploadMetadata(json, filename, folder) {
+                const gh = window.settingsStore.getActiveGitHub();
+                if (!gh) throw new Error("No configured GitHub Profile");
+                const [owner, repo] = gh.repo.split('/');
+                const path = `${folder}/${filename}`;
+
+                const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${gh.token}`, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: `Metadata: ${filename}`, content: btoa(JSON.stringify(json, null, 2)) })
+                });
+                if (!res.ok) throw new Error("GitHub Metadata Upload Failed");
+                return await res.json();
+            }
+
+            async sendToDiscord(job) {
+                const discord = window.settingsStore.getActiveDiscord();
+                if (!discord) throw new Error("No configured Discord Webhook");
+                if (!job.result?.generations?.[0]) throw new Error("No image to send");
+
+                const payload = {
+                    content: `**Prompt:** ${job.prompt}`,
+                    embeds: [{
+                        title: "Generation Result",
+                        image: { url: job.result.generations[0].img },
+                        footer: { text: `Model: ${job.params?.model || 'Unknown'}` }
+                    }]
+                };
+
+                const res = await fetch(discord.url, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                });
+                if (!res.ok) throw new Error("Discord Webhook Failed");
+            }
+        }
+        window.storageClient = new StorageClient();
+    </script>
+
+    <!-- 5. Form Engine -->
+    <script>
+        class FormEngine {
+            constructor() { this.wildcards = {}; }
+
+            render(schema, container) {
+                if (!container) return;
+                container.innerHTML = '';
+                const items = Array.isArray(schema) ? schema : [];
+                items.forEach(item => container.appendChild(this.createField(item)));
+            }
+
+            createField(item) {
+                const wrapper = document.createElement('div');
+                wrapper.className = "mb-4";
+
+                // Normalize type
+                const type = (item.type || 'text').toLowerCase();
+
+                if (type === 'group') {
+                    wrapper.className = "glass p-4 rounded-xl mb-4";
+                    const details = document.createElement('details');
+                    if (item.open) details.open = true;
+                    details.className = "group";
+
+                    const summary = document.createElement('summary');
+                    summary.className = "flex justify-between items-center cursor-pointer list-none outline-none";
+                    summary.innerHTML = `<span class="font-medium text-slate-300">${item.label || 'Group'}</span><i class="fas fa-chevron-down text-slate-500 transition-transform group-open:rotate-180"></i>`;
+
+                    const content = document.createElement('div');
+                    content.className = "mt-4 space-y-4 pt-2 border-t border-white/5";
+                    if (item.children && Array.isArray(item.children)) {
+                        item.children.forEach(child => content.appendChild(this.createField(child)));
+                    }
+                    details.appendChild(summary); details.appendChild(content); wrapper.appendChild(details);
+                    return wrapper;
+                }
+
+                // Label
+                const label = document.createElement('label');
+                label.className = "block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wide";
+                label.innerText = item.label || item.key;
+
+                // For checkboxes, we might want a different layout (side by side), but let's stick to standard first or flex them.
+                if (type === 'checkbox' || type === 'boolean') {
+                    wrapper.className = "mb-4 flex items-center justify-between glass p-3 rounded-xl border border-white/5";
+                    label.className = "text-sm font-medium text-slate-300 m-0"; // Reset label style for checkbox
+                    wrapper.appendChild(label);
+
+                    const input = document.createElement('input');
+                    input.type = 'checkbox';
+                    input.className = "w-5 h-5 rounded border-slate-600 text-violet-600 focus:ring-violet-500 bg-slate-700/50";
+                    if (item.default === true || item.default === 'true') input.checked = true;
+
+                    input.dataset.key = item.key;
+                    input.dataset.type = 'checkbox';
+                    if (item.user_only) input.dataset.userOnly = "true";
+
+                    wrapper.appendChild(input);
+                    return wrapper;
+                }
+
+                wrapper.appendChild(label);
+
+                let input;
+                switch (type) {
+                    case 'select':
+                        input = document.createElement('select');
+                        input.className = "glass-input w-full bg-slate-900/50";
+                        if (item.options) {
+                            item.options.forEach(opt => {
+                                const option = document.createElement('option');
+                                option.value = opt; option.innerText = opt;
+                                if (opt === item.default) option.selected = true;
+                                input.appendChild(option);
+                            });
+                        }
+                        break;
+
+                    case 'textarea':
+                        input = document.createElement('textarea');
+                        input.className = "glass-input w-full min-h-[80px]";
+                        if (item.placeholder) input.placeholder = item.placeholder;
+                        break;
+
+                    case 'number':
+                    case 'slider':
+                        // If min/max/step are present, we can do a slider combo
+                        if (item.min !== undefined && item.max !== undefined) {
+                            const rangeContainer = document.createElement('div');
+                            rangeContainer.className = "flex items-center gap-3";
+
+                            const range = document.createElement('input');
+                            range.type = 'range';
+                            range.className = "flex-grow h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-violet-500";
+
+                            const numInput = document.createElement('input');
+                            numInput.type = 'number';
+                            numInput.className = "glass-input w-20 text-center p-1.5";
+
+                            ['min', 'max', 'step'].forEach(attr => {
+                                if (item[attr] !== undefined) {
+                                    range[attr] = item[attr];
+                                    numInput[attr] = item[attr];
+                                }
+                            });
+
+                            const def = item.default !== undefined ? item.default : (item.min || 0);
+                            range.value = def;
+                            numInput.value = def;
+
+                            // Sync
+                            range.addEventListener('input', () => numInput.value = range.value);
+                            numInput.addEventListener('input', () => range.value = numInput.value);
+
+                            rangeContainer.appendChild(range);
+                            rangeContainer.appendChild(numInput);
+
+                            // We need to expose the value for getValues. 
+                            // We'll mark the numInput as the data carrier
+                            numInput.dataset.key = item.key;
+                            numInput.dataset.type = 'number';
+                            if (item.user_only) numInput.dataset.userOnly = "true";
+
+                            wrapper.appendChild(rangeContainer);
+                            return wrapper; // Return early since we handled appending
+                        } else {
+                            // Standard number input
+                            input = document.createElement('input');
+                            input.type = 'number';
+                            input.className = "glass-input w-full";
+                            ['min', 'max', 'step'].forEach(attr => { if (item[attr] !== undefined) input[attr] = item[attr]; });
+                        }
+                        break;
+
+                    default:
+                        input = document.createElement('input');
+                        input.type = 'text';
+                        input.className = "glass-input w-full";
+                }
+
+                if (item.default !== undefined && type !== 'select' && type !== 'checkbox') input.value = item.default;
+
+                input.dataset.key = item.key;
+                input.dataset.type = type;
+                if (item.user_only) input.dataset.userOnly = "true";
+                wrapper.appendChild(input);
+                return wrapper;
+            }
+
+            setValues(container, data) {
+                if (!container || !data) return;
+                const flattened = { ...data.params, ...data.meta };
+                const inputs = container.querySelectorAll('[data-key]');
+
+                inputs.forEach(input => {
+                    const key = input.dataset.key;
+                    if (flattened[key] !== undefined) {
+                        const type = input.dataset.type;
+                        if (type === 'checkbox') {
+                            input.checked = flattened[key];
+                        } else {
+                            input.value = flattened[key];
+                        }
+                        // Dispatch event to sync sliders/UI
+                        input.dispatchEvent(new Event('input', { bubbles: true }));
+                        input.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+            }
+
+            getValues(container) {
+                const values = {}; const meta = {};
+                const inputs = container.querySelectorAll('[data-key]');
+                inputs.forEach(input => {
+                    const key = input.dataset.key;
+                    const isUserOnly = input.dataset.userOnly === "true";
+                    let val = input.value;
+                    const type = input.dataset.type; // Use the stored type
+
+                    if (type === 'number') val = parseFloat(val);
+                    if (type === 'checkbox') val = input.checked;
+
+                    if (isUserOnly) meta[key] = val; else values[key] = val;
+                });
+                return { params: values, meta: meta };
+            }
+        }
+        window.formEngine = new FormEngine();
+    </script>
+
+    <!-- 6. Form Designer -->
+    <script>
+        class FormDesigner {
+            constructor() { this.editor = null; this.previewContainer = null; this.defaultSchema = []; }
+
+            async init() {
+                try {
+                    // Safety Checks
+                    if (!window.formEngine) throw new Error("FormEngine not loaded");
+
+                    // Element Selection
+                    this.editor = document.getElementById('designer-textarea');
+                    this.previewContainer = document.getElementById('designer-preview');
+                    const view = document.getElementById('view-designer');
+
+                    if (!this.editor || !this.previewContainer || !view) {
+                        throw new Error("Critical: Missing Designer DOM Elements");
+                    }
+
+                    // 1. Inject Toolbar (Buttons)
+                    // Check if already injected to avoid duplicates
+                    let typeContainer = view.querySelector('.designer-toolbar');
+                    if (!typeContainer) {
+                        const toolbar = document.createElement('div');
+                        toolbar.className = "designer-toolbar flex gap-2 mb-2 px-4 pt-2";
+                        toolbar.innerHTML = `
+                            <button id="btn-save-schema" class="glass-btn bg-emerald-600 hover:bg-emerald-500 text-xs px-3 py-1.5"><i class="fas fa-save mr-1"></i> Save & Apply</button>
+                            <button id="btn-reset-schema" class="glass-btn bg-red-600 hover:bg-red-500 text-xs px-3 py-1.5"><i class="fas fa-undo mr-1"></i> Reset to Default</button>
+                            <button id="btn-help-schema" class="glass-btn bg-sky-600 hover:bg-sky-500 text-xs px-3 py-1.5"><i class="fas fa-question-circle mr-1"></i> Help</button>
+                        `;
+                        const flexContainer = view.querySelector('.flex-grow');
+                        if (flexContainer) {
+                            flexContainer.before(toolbar);
+                            document.getElementById('btn-save-schema').addEventListener('click', () => this.saveSchema());
+                            document.getElementById('btn-reset-schema').addEventListener('click', () => this.resetSchema());
+                            document.getElementById('btn-help-schema').addEventListener('click', () => alert("Check 'customization_guide.md' for examples!"));
+                        } else {
+                            throw new Error("Could not find flex-grow container");
+                        }
+                    }
+
+                    // 2. Load Content
+                    // Try LocalStorage first, then Default
+                    const stored = localStorage.getItem('AG_HORDE_FORM_SCHEMA');
+                    if (stored) {
+                        this.defaultSchema = JSON.parse(stored);
+                    } else if (typeof window.DEFAULT_FORM_CONFIG !== 'undefined') {
+                        this.defaultSchema = window.DEFAULT_FORM_CONFIG;
+                    } else {
+                        // Fallback hardcoded if script loading failed order
+                        this.defaultSchema = [{ "type": "text", "key": "error_fallback", "label": "Error Loading Config" }];
+                    }
+
+                    this.editor.value = JSON.stringify(this.defaultSchema, null, 2);
+
+                    // Initial Render
+                    this.updatePreview();
+
+                    // Listener
+                    this.editor.removeEventListener('input', this._boundUpdate); // Remove old if any
+                    this._boundUpdate = () => this.updatePreview();
+                    this.editor.addEventListener('input', this._boundUpdate);
+
+                } catch (e) {
+                    console.error("Designer Init Error", e);
+                    alert("Designer Error: " + e.message);
+                    if (this.previewContainer) {
+                        this.previewContainer.innerHTML = `<div class="text-red-500 p-4 font-bold border border-red-500 rounded bg-red-900/20">Init Error: ${e.message}</div>`;
+                    }
+                }
+            }
+
+            saveSchema() {
+                try {
+                    const jsonStr = this.editor.value;
+                    const schema = JSON.parse(jsonStr); // Validate
+
+                    localStorage.setItem('AG_HORDE_FORM_SCHEMA', JSON.stringify(schema));
+                    alert("Form Configuration Saved! The 'Generate' tab will now use this layout.");
+
+                    // Force reload if app is running
+                    if (window.app) window.app.loadDynamicForm();
+
+                } catch (e) {
+                    alert("Invalid JSON. Fix errors before saving.\n\n" + e.message);
+                }
+            }
+
+            async resetSchema() {
+                if (!await window.dialogs.confirm("Reset Schema", "Reset form to built-in defaults? This will erase your custom changes.")) return;
+                localStorage.removeItem('AG_HORDE_FORM_SCHEMA');
+                this.defaultSchema = window.DEFAULT_FORM_CONFIG || [];
+                this.editor.value = JSON.stringify(this.defaultSchema, null, 2);
+                this.updatePreview();
+                this.saveSchema(); // Save the reset state
+            }
+
+            updatePreview() {
+                if (!this.editor || !this.previewContainer) return;
+                const jsonStr = this.editor.value;
+                this.previewContainer.innerHTML = '';
+                try {
+                    const schema = JSON.parse(jsonStr);
+                    this.previewContainer.innerHTML = '<div class="text-xs text-slate-500 mb-4 uppercase tracking-widest border-b border-white/5 pb-2">Live Preview</div>';
+                    const wrapper = document.createElement('div');
+                    wrapper.className = "space-y-4 pr-2"; // Removed max-h and scroll, handled by parent
+                    window.formEngine.render(schema, wrapper);
+                    this.previewContainer.appendChild(wrapper);
+                    this.editor.classList.remove('border-red-500');
+                    this.editor.classList.add('border-slate-700');
+                } catch (e) {
+                    this.editor.classList.add('border-red-500');
+                    const err = document.createElement('div');
+                    err.className = "text-red-400 text-xs mt-2 bg-red-900/20 p-2 rounded";
+                    err.innerText = `Invalid JSON: ${e.message}`;
+                    this.previewContainer.appendChild(err);
+                }
+            }
+        }
+        window.formDesigner = new FormDesigner();
+    </script>
+
+    <!-- 7. Queue Manager -->
+    <script>
+        class QueueManager {
+            constructor(onUpdate) {
+                this.queue = [];
+                this.intervalId = null;
+                this.onUpdate = onUpdate;
+            }
+
+            get jobs() { return this.queue; }
+
+            async handleAutoUpload(job) {
+                try {
+                    const imgUrl = job.result.generations[0].img;
+                    const res = await fetch(imgUrl);
+                    const blob = await res.blob();
+                    const date = new Date().toISOString().split('T')[0];
+                    await window.storageClient.uploadImage(blob, `${job.id}.png`, date);
+                    const meta = { prompt: job.prompt, params: job.params, horde_id: job.id, created: job.created, worker: job.result.generations[0].worker_name };
+                    await window.storageClient.uploadMetadata(meta, `${job.id}.json`, date);
+                    console.log(`Uploaded ${job.id} to GitHub`);
+                } catch (e) { console.error("Auto-upload failed", e); }
+            }
+
+            async sendToDiscord(jobId) {
+                const job = this.queue.find(j => j.id === jobId);
+                if (!job) return;
+                try {
+                    await window.storageClient.sendToDiscord(job);
+                    alert("Sent to Discord!");
+                } catch (e) { alert("Discord Error: " + e.message); }
+            }
+
+            addJob(jobId, prompt, params, model) {
+                // Ensure model is stored
+                if (model && params && !params.model) params.model = model;
+                const job = { id: jobId, prompt: prompt, params: params, status: 'waiting', created: Date.now(), result: null, wait_time: 0, position: 0, notes: '' };
+                this.queue.unshift(job);
+                this.startPolling();
+                this.notify();
+            }
+
+            removeJob(jobId) { this.queue = this.queue.filter(j => j.id !== jobId); this.notify(); }
+            clearFinished() { this.queue = this.queue.filter(j => j.status !== 'done' && j.status !== 'error'); this.notify(); }
+
+            startPolling() {
+                if (this.intervalId) return;
+                const ms = parseInt(localStorage.getItem('AG_HORDE_POLL_INTERVAL') || '3000');
+                this.intervalId = setInterval(() => this.process(), ms);
+            }
+            stopPolling() { if (this.intervalId) { clearInterval(this.intervalId); this.intervalId = null; } }
+
+            async process() {
+                let activeCount = 0;
+                for (const job of this.queue) {
+                    if (job.status === 'done' || job.status === 'error') continue;
+                    activeCount++;
+                    try {
+                        const check = await window.hordeClient.checkStatus(job.id);
+                        if (check.done) {
+                            const result = await window.hordeClient.getResult(job.id);
+                            job.status = 'done'; job.result = result;
+                            this.handleAutoUpload(job);
+                        } else if (!check.is_possible) {
+                            job.status = 'error'; job.result = { message: "Generation impossible (no workers)" };
+                        } else {
+                            job.status = 'processing'; job.wait_time = check.wait_time; job.position = check.queue_position;
+                        }
+                    } catch (e) { console.warn(`Check failed for ${job.id}`, e); }
+                }
+                this.notify();
+                if (activeCount === 0) this.stopPolling();
+            }
+
+            notify() { if (this.onUpdate) this.onUpdate(this.queue); }
+        }
+    </script>
+
+    <!-- 8. Gallery Manager -->
+    <script>
+        class GalleryManager {
+            constructor() { this.currentPath = ''; this.cache = {}; }
+
+            async listDirectory(path = '') {
+                const gh = window.settingsStore.getActiveGitHub();
+                if (!gh) throw new Error("No Active GitHub Configured");
+                const [owner, repo] = gh.repo.split('/');
+                const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`, {
+                    headers: { 'Authorization': `token ${gh.token}`, 'Accept': 'application/vnd.github+json' }
+                });
+                if (!res.ok) throw new Error("Failed to fetch repo contents");
+                return await res.json();
+            }
+
+            async getDates() {
+                try {
+                    const files = await this.listDirectory('');
+                    return files.filter(f => f.type === 'dir' && /^\d{4}-\d{2}-\d{2}$/.test(f.name))
+                        .sort((a, b) => b.name.localeCompare(a.name));
+                } catch (e) { console.error(e); return []; }
+            }
+
+            async getImagesInDate(dateFolder) {
+                try {
+                    const files = await this.listDirectory(dateFolder);
+                    return files.filter(f => f.name.endsWith('.png') || f.name.endsWith('.jpg'))
+                        .map(f => ({ name: f.name, url: f.download_url, path: f.path, date: dateFolder }));
+                } catch (e) { console.error(e); return []; }
+            }
+        }
+        window.galleryManager = new GalleryManager();
+    </script>
+
+    <!-- 9. Notification Toasts -->
+    <div id="toast-container" class="fixed top-20 right-4 z-[110] flex flex-col gap-2 pointer-events-none">
+        <!-- Dynamic Toasts -->
+    </div>
+
+    <!-- 9.5 Custom Dialogs -->
+    <div id="dialog-overlay"
+        class="fixed inset-0 z-[200] hidden flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div
+            class="glass p-6 rounded-2xl max-w-sm w-full space-y-4 animate-in zoom-in-95 shadow-2xl border border-white/10 bg-slate-900/50">
+            <h3 id="dialog-title" class="text-lg font-bold text-white">Confirmation</h3>
+            <p id="dialog-message" class="text-sm text-slate-300">Are you sure?</p>
+            <input type="text" id="dialog-input"
+                class="hidden w-full bg-slate-800/50 border border-slate-600 rounded-lg p-2.5 text-slate-200 outline-none focus:border-violet-500">
+            <div class="flex justify-end gap-3 mt-4">
+                <button id="dialog-cancel"
+                    class="glass-btn bg-slate-700 hover:bg-slate-600 text-slate-300 text-xs px-4 py-2">Cancel</button>
+                <button id="dialog-confirm"
+                    class="glass-btn bg-violet-600 hover:bg-violet-500 text-white text-xs px-4 py-2">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 10. Modal System (New) -->
+    <div id="generic-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm" onclick="window.app.closeModal()"></div>
+        <div class="absolute inset-0 flex items-center justify-center p-4">
+            <div
+                class="glass w-full max-w-2xl max-h-[85vh] flex flex-col rounded-2xl animate-in zoom-in-95 duration-200">
+                <div class="p-4 border-b border-white/10 flex justify-between items-center bg-slate-900/50">
+                    <h3 id="modal-title" class="text-lg font-bold text-white">Modal</h3>
+                    <button onclick="window.app.closeModal()" class="text-slate-400 hover:text-white"><i
+                            class="fas fa-times"></i></button>
+                </div>
+                <div id="modal-content" class="p-6 overflow-y-auto custom-scroll flex-grow">
+                    <!-- Dynamic Content -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 10. Manager Classes -->
+    <script>
+        class StyleManager {
+            constructor() {
+                this.styles = JSON.parse(localStorage.getItem('AG_HORDE_STYLES') || '[]');
+                // Add defaults if empty
+                if (this.styles.length === 0) {
+                    this.styles = [
+                        { id: '1', name: 'Cinematic', prompt: ', cinematic lighting, 8k, highly detailed, dramatic atmosphere' },
+                        { id: '2', name: 'Anime', prompt: ', anime style, cel shaded, vibrant colors, studio ghibli inspired' },
+                        { id: '3', name: 'Digital Art', prompt: ', digital art, trending on artstation, concept art, sharp focus' }
+                    ];
+                    this.save();
+                }
+            }
+            save() { localStorage.setItem('AG_HORDE_STYLES', JSON.stringify(this.styles)); }
+
+            add(name, prompt) {
+                this.styles.push({ id: crypto.randomUUID(), name, prompt });
+                this.save();
+            }
+            delete(id) {
+                this.styles = this.styles.filter(s => s.id !== id);
+                this.save();
+            }
+            getAll() { return this.styles; }
+        }
+
+        class PresetManager {
+            constructor() {
+                this.presets = JSON.parse(localStorage.getItem('AG_HORDE_PRESETS') || '[]');
+            }
+            save() { localStorage.setItem('AG_HORDE_PRESETS', JSON.stringify(this.presets)); }
+
+            add(name, data) {
+                this.presets.push({ id: crypto.randomUUID(), name, date: Date.now(), data });
+                this.save();
+            }
+            delete(id) {
+                this.presets = this.presets.filter(p => p.id !== id);
+                this.save();
+            }
+            get(id) { return this.presets.find(p => p.id === id); }
+            getAll() { return this.presets; }
+        }
+
+        class NotificationManager {
+            constructor() {
+                this.history = [];
+                this.container = document.getElementById('toast-container');
+            }
+
+            // Type: info, success, warning, error
+            show(message, type = 'info') {
+                const id = crypto.randomUUID();
+                const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+                const color = type === 'success' ? 'text-emerald-400' : type === 'error' ? 'text-red-400' : type === 'warning' ? 'text-amber-400' : 'text-blue-400';
+                const border = type === 'success' ? 'border-emerald-500/30' : type === 'error' ? 'border-red-500/30' : type === 'warning' ? 'border-amber-500/30' : 'border-blue-500/30';
+
+                // Add to history
+                this.history.unshift({ id, message, type, time: Date.now() });
+                this.updateBell();
+
+                // Create Toast
+                const toast = document.createElement('div');
+                toast.className = `glass p-4 rounded-xl flex items-center gap-3 w-80 shadow-2xl transform transition-all duration-300 translate-x-10 opacity-0 pointer-events-auto border ${border}`;
+                toast.innerHTML = `
+                    <i class="fas fa-${icon} ${color} text-xl"></i>
+                    <div class="text-sm text-slate-200">${message}</div>
+                    <button onclick="this.parentElement.remove()" class="ml-auto text-slate-500 hover:text-white"><i class="fas fa-times"></i></button>
+                `;
+                this.container.appendChild(toast);
+
+                // Animate In
+                requestAnimationFrame(() => {
+                    toast.classList.remove('translate-x-10', 'opacity-0');
+                });
+
+                // Auto Dismiss
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'translate-x-10');
+                    setTimeout(() => toast.remove(), 300);
+                }, 10000);
+            }
+
+            getHistory() { return this.history; }
+            clearHistory() { this.history = []; this.updateBell(); }
+
+            updateBell() {
+                const dot = document.getElementById('notification-dot');
+                if (dot) {
+                    if (this.history.length > 0) dot.classList.remove('hidden');
+                    else dot.classList.add('hidden');
+                }
+            }
+        }
+
+        class DialogManager {
+            constructor() {
+                this.overlay = document.getElementById('dialog-overlay');
+                this.title = document.getElementById('dialog-title');
+                this.message = document.getElementById('dialog-message');
+                this.input = document.getElementById('dialog-input');
+                this.btnConfirm = document.getElementById('dialog-confirm');
+                this.btnCancel = document.getElementById('dialog-cancel');
+
+                this.resolve = null;
+            }
+
+            _show(title, msg, showInput = false, defaultVal = '') {
+                return new Promise((resolve) => {
+                    this.resolve = resolve;
+                    this.title.innerText = title;
+                    this.message.innerText = msg;
+                    this.input.value = defaultVal;
+
+                    if (showInput) {
+                        this.input.classList.remove('hidden');
+                        setTimeout(() => this.input.focus(), 50);
+                    } else {
+                        this.input.classList.add('hidden');
+                    }
+
+                    this.overlay.classList.remove('hidden');
+
+                    // One-time listeners
+                    this.btnConfirm.onclick = () => this._close(true);
+                    this.btnCancel.onclick = () => this._close(false);
+
+                    // Enter key support
+                    if (showInput) {
+                        this.input.onkeydown = (e) => {
+                            if (e.key === 'Enter') this._close(true);
+                            if (e.key === 'Escape') this._close(false);
+                        };
+                    }
+                });
+            }
+
+            _close(confirmed) {
+                this.overlay.classList.add('hidden');
+                if (this.resolve) {
+                    if (confirmed) {
+                        const val = this.input.classList.contains('hidden') ? true : this.input.value;
+                        this.resolve(val);
+                    } else {
+                        this.resolve(this.input.classList.contains('hidden') ? false : null);
+                    }
+                }
+                this.resolve = null;
+            }
+
+            async confirm(title, message) {
+                return await this._show(title, message, false);
+            }
+
+            async prompt(title, message, defaultVal = '') {
+                return await this._show(title, message, true, defaultVal);
+            }
+        }
+
+        window.styleManager = new StyleManager();
+        window.presetManager = new PresetManager();
+        window.notifications = new NotificationManager();
+        window.dialogs = new DialogManager();
+    </script>
+
+    <!-- 11. Main Application -->
+    <script>
+        const Router = {
+            current: 'generate',
+            navigate(viewId) {
+                document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+                const target = document.getElementById(`view-${viewId}`);
+                if (target) { target.classList.remove('hidden'); this.current = viewId; }
+                document.querySelectorAll('.nav-btn').forEach(btn => {
+                    if (btn.id === `nav-${viewId}`) btn.setAttribute('data-active', 'true');
+                    else btn.removeAttribute('data-active');
+                });
+                if (viewId === 'designer') window.formDesigner.init();
+                if (viewId === 'gallery') window.app.loadGallery();
+            }
+        };
+
+        window.app = {
+            router: Router,
+            queue: null,
+
+            async init() {
+                console.log("Antigravity Horde SingleFile Initializing...");
+                this.queue = new QueueManager(this.renderQueue.bind(this));
+                this.loadSettingsUI();
+                await this.loadDynamicForm();
+                this.checkHordeConnection();
+                this.loadModels();
+                this.router.navigate('generate');
+                this.setupListeners();
+            },
+
+            loadSettingsUI() {
+                const keyInput = document.getElementById('setting-horde-key');
+                if (keyInput) keyInput.value = window.settingsStore.getHordeKey();
+                const gh = window.settingsStore.getActiveGitHub();
+                if (gh) {
+                    document.getElementById('setting-gh-token').value = gh.token;
+                    document.getElementById('setting-gh-repo').value = gh.repo;
+                }
+                const discord = window.settingsStore.getActiveDiscord();
+                if (discord) document.getElementById('setting-discord-url').value = discord.url;
+            },
+
+            async loadDynamicForm() {
+                const container = document.getElementById('dynamic-form-container');
+                if (!container) return;
+                try {
+                    // Check Storage first, then Default
+                    const stored = localStorage.getItem('AG_HORDE_FORM_SCHEMA');
+                    const schema = stored ? JSON.parse(stored) : window.DEFAULT_FORM_CONFIG;
+
+                    if (!schema) throw new Error("Default config missing");
+                    window.formEngine.render(schema, container);
+
+                } catch (e) {
+                    console.error(e);
+                    window.notifications.show(`Failed to load form schema: ${e.message} `, 'error');
+                }
+            },
+
+            // Modal Logic
+            openModal(title, html) {
+                const modal = document.getElementById('generic-modal');
+                document.getElementById('modal-title').innerText = title;
+                document.getElementById('modal-content').innerHTML = html;
+                modal.classList.remove('hidden');
+            },
+            closeModal() {
+                document.getElementById('generic-modal').classList.add('hidden');
+            },
+
+            // Notifications Logic
+            openNotifications() {
+                const history = window.notifications.getHistory();
+                const html = `
+                    <div class="space-y-2">
+                        <div class="flex justify-end mb-2">
+                            <button onclick="window.notifications.clearHistory(); window.app.openNotifications()" class="text-xs text-rose-400 hover:text-white">Clear All</button>
+                        </div>
+                        ${history.length === 0 ? '<div class="text-center text-slate-500 py-8">No notifications</div>' : ''}
+                        ${history.map(n => `
+                            <div class="glass p-3 rounded flex gap-3 border-l-2 ${n.type === 'success' ? 'border-emerald-500' : n.type === 'error' ? 'border-red-500' : 'border-blue-500'}">
+                                <i class="fas fa-${n.type === 'success' ? 'check' : n.type === 'error' ? 'exclamation' : 'info-circle'} mt-1 text-xs opacity-50"></i>
+                                <div>
+                                    <div class="text-xs text-slate-500 mb-1">${new Date(n.time).toLocaleString()}</div>
+                                    <div class="text-sm text-slate-200">${n.message}</div>
+                                </div>
+                            </div>
+                        `).join('')
+                    }
+                    </div>
+                    `;
+                this.openModal('Notifications', html);
+            },
+
+            // Styles
+            openStylesModal() {
+                const styles = window.styleManager.getAll();
+                const html = `
+                    <div class="space-y-4">
+                        <div class="flex gap-2">
+                            <input type="text" id="new-style-name" placeholder="New Style Name" class="glass-input flex-grow">
+                            <input type="text" id="new-style-prompt" placeholder="Modifier (e.g. ', oil painting')" class="glass-input flex-grow-[2]">
+                            <button onclick="window.app.addStyle()" class="glass-btn bg-violet-600 hover:bg-violet-500"><i class="fas fa-plus"></i></button>
+                        </div>
+                                <div class="grid gap-2">
+                                    ${styles.map(s => `
+                                <div class="glass p-3 rounded flex justify-between items-center">
+                                    <div>
+                                        <div class="font-bold text-sm">${s.name}</div>
+                                        <div class="text-xs text-slate-500 truncate max-w-[300px]">${s.prompt}</div>
+                                    </div>
+                                    <div class="flex gap-2">
+                                        <button onclick="window.app.applyStyle('${s.id}')" class="text-xs bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded hover:bg-emerald-500 hover:text-white transition">Apply</button>
+                                        <button onclick="window.app.deleteStyle('${s.id}')" class="text-xs text-red-400 hover:text-red-300"><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                                </div>
+                        </div>
+                `;
+                this.openModal('Style Manager', html);
+            },
+            async addStyle() {
+                const name = document.getElementById('new-style-name').value;
+                const prompt = document.getElementById('new-style-prompt').value;
+                if (!name || !prompt) return window.notifications.show("Missing name or prompt", 'warning');
+                window.styleManager.add(name, prompt);
+                window.notifications.show(`Style '${name}' added`, 'success');
+                this.openStylesModal(); // Refresh
+            },
+
+            async deleteStyle(id) {
+                if (!await window.dialogs.confirm("Delete Style", "Are you sure you want to delete this style?")) return;
+                window.styleManager.delete(id);
+                this.openStylesModal();
+            },
+
+            applyStyle(id) {
+                const style = window.styleManager.getAll().find(s => s.id === id);
+                if (!style) return;
+                const input = document.getElementById('prompt-input');
+                if (input.value.includes("{prompt}")) {
+                    input.value = style.prompt.replace("{prompt}", input.value);
+                } else {
+                    input.value += style.prompt; // Append
+                }
+                window.notifications.show(`Applied style: ${style.name} `);
+                this.closeModal();
+            },
+
+            // Presets
+            openPresetsModal() {
+                const presets = window.presetManager.getAll();
+                const html = `
+                    <div class="space-y-2">
+                        ${presets.length === 0 ? '<div class="text-center text-slate-500 py-8">No saved presets</div>' : ''}
+                        ${presets.map(p => `
+                            <div class="glass p-4 rounded flex justify-between items-center group">
+                                <div>
+                                    <div class="font-bold text-violet-300">${p.name}</div>
+                                    <div class="text-[10px] text-slate-500">${new Date(p.date).toLocaleString()}</div>
+                                    <div class="text-[10px] text-slate-400 mt-1">Model: ${p.data.model || 'Unknown'}</div>
+                                </div>
+                                <div class="flex gap-2 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity">
+                                    <button onclick="window.app.loadPreset('${p.id}')" class="glass-btn text-xs bg-indigo-600 hover:bg-indigo-500">Load</button>
+                                    <button onclick="window.app.deletePreset('${p.id}')" class="glass-btn text-xs bg-red-600/20 hover:bg-red-600 text-red-400 hover:text-white"><i class="fas fa-trash"></i></button>
+                                </div>
+                            </div>
+                        `).join('')
+                    }
+                </div>
+                `;
+                this.openModal('Presets Library', html);
+            },
+
+            async saveCurrentAsPreset() {
+                const name = await window.dialogs.prompt("Save Preset", "Enter a name for this preset:", "New Preset");
+                if (!name) return; // Cancelled
+
+                const promptInput = document.getElementById('prompt-input').value;
+                const negInput = document.getElementById('negative-prompt-input').value;
+                const model = document.getElementById('model-select').value; // Get Model
+                const formValues = window.formEngine.getValues(document.getElementById('dynamic-form-container'));
+
+                const data = {
+                    prompt: promptInput,
+                    negative: negInput,
+                    model: model, // Save Model
+                    form: formValues
+                };
+
+                window.presetManager.add(name, data);
+                window.notifications.show(`Preset '${name}' saved!`, 'success');
+            },
+
+            async deletePreset(id) {
+                if (!await window.dialogs.confirm("Delete Preset", "Are you sure you want to delete this preset?")) return;
+                window.presetManager.delete(id);
+                this.openPresetsModal();
+            },
+
+            loadPreset(id) {
+                const preset = window.presetManager.get(id);
+                if (!preset) return;
+
+                document.getElementById('prompt-input').value = preset.data.prompt || '';
+                document.getElementById('negative-prompt-input').value = preset.data.negative || '';
+
+                if (preset.data.model) {
+                    document.getElementById('model-select').value = preset.data.model;
+                }
+
+                if (preset.data.form) {
+                    window.formEngine.setValues(document.getElementById('dynamic-form-container'), preset.data.form);
+                }
+                window.notifications.show(`Preset '${preset.name}' loaded!`, 'success');
+                this.closeModal();
+            },
+
+            async checkHordeConnection() {
+                const alive = await window.hordeClient.getHeartbeat();
+                const dot = document.getElementById('horde-status-dot');
+                const kudos = document.getElementById('user-kudos');
+                if (alive) {
+                    if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]";
+                    const user = await window.hordeClient.getUserInfo();
+                    if (user) {
+                        if (kudos) kudos.innerText = `${user.username} (${user.kudos} kudos)`;
+                    } else {
+                        if (kudos) kudos.innerText = "Anonymous";
+                    }
+                } else {
+                    if (dot) dot.className = "w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]";
+                    if (kudos) kudos.innerText = "Offline";
+                    window.notifications.show("Horde API Offline", 'error');
+                }
+            },
+
+            async loadModels() {
+                const select = document.getElementById('model-select');
+                if (!select) return;
+                try {
+                    const models = await window.hordeClient.getModels();
+                    models.sort((a, b) => b.count - a.count);
+                    select.innerHTML = models.map(m => `<option value="${m.name}">${m.name} (${m.count})</option>`).join('');
+                } catch (e) {
+                    select.innerHTML = `<option disabled>Failed to load models</option>`;
+                    window.notifications.show("Failed to load models list", 'warning');
+                }
+            },
+
+            async handleGenerate() {
+                const promptInput = document.getElementById('prompt-input');
+                const negInput = document.getElementById('negative-prompt-input'); // New
+                const modelSelect = document.getElementById('model-select');
+
+                let prompt = promptInput ? promptInput.value : '';
+                const negative = negInput ? negInput.value : '';
+                const model = modelSelect ? modelSelect.value : '';
+
+                if (!prompt) return window.notifications.show("Please enter a prompt!", 'warning');
+                if (!model) return window.notifications.show("Please select a model!", 'warning');
+
+                // Combine Negative Prompt
+                if (negative && negative.trim().length > 0) {
+                    prompt = `${prompt} ### ${negative} `;
+                }
+
+                const btn = document.getElementById('btn-generate');
+                const originalText = btn.innerHTML;
+                btn.disabled = true; btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Sending...`;
+
+                try {
+                    const formValues = window.formEngine.getValues(document.getElementById('dynamic-form-container'));
+                    const params = formValues.params;
+                    const res = await window.hordeClient.generateImage(prompt, params, model);
+                    this.queue.addJob(res.id, prompt, params, model);
+                    this.router.navigate('pending');
+                    window.notifications.show("Generation started...", 'success');
+                } catch (e) {
+                    window.notifications.show(`Generation Error: ${e.message} `, 'error');
+                }
+                finally { btn.disabled = false; btn.innerHTML = originalText; }
+            },
+
+            // Queue Renderer & Filters
+            queueFilter: 'all',
+
+            setQueueFilter(filter) {
+                this.queueFilter = filter;
+                document.querySelectorAll('[id^="qf-"]').forEach(b => {
+                    b.classList.remove('bg-slate-700', 'text-white');
+                    b.classList.add('text-slate-400');
+                });
+                const btn = document.getElementById(`qf-${filter}`);
+                if (btn) {
+                    btn.classList.add('bg-slate-700', 'text-white');
+                    btn.classList.remove('text-slate-400');
+                }
+                if (this.queue) this.renderQueue(this.queue.jobs);
+            },
+
+            resumeJobTracking(id) {
+                const job = this.queue.jobs.find(j => j.id === id);
+                if (job) {
+                    job.status = 'waiting';
+                    job.result = null; // Clear error result
+                    this.queue.notify(); // Triggers re-render
+                    this.closeModal();
+                    window.notifications.show("Resumed tracking job", 'success');
+                }
+            },
+
+            openQueueSettings() {
+                const html = `
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-sm font-bold text-slate-300 block mb-2">Refresh Interval (ms)</label>
+                            <input type="number" id="q-poll-interval" value="${window.settingsStore.getPollInterval ? window.settingsStore.getPollInterval() : (localStorage.getItem('AG_HORDE_POLL_INTERVAL') || 3000)}" class="glass-input w-full">
+                            <p class="text-[10px] text-slate-500 mt-1">Lower values update faster but may hit API limits.</p>
+                        </div>
+                        <div class="flex justify-end gap-2">
+                             <button onclick="window.app.saveQueueSettings()" class="glass-btn bg-violet-600 hover:bg-violet-500">Save</button>
+                        </div>
+                    </div>
+                `;
+                this.openModal('Queue Settings', html);
+            },
+
+            saveQueueSettings() {
+                const val = parseInt(document.getElementById('q-poll-interval').value);
+                if (val < 1000) return window.notifications.show("Interval too low (min 1000ms)", 'warning');
+                localStorage.setItem('AG_HORDE_POLL_INTERVAL', val);
+                if (this.queue) {
+                    this.queue.stopPolling();
+                    this.queue.startPolling();
+                }
+                window.notifications.show("Queue Settings Saved");
+                this.closeModal();
+            },
+
+            renderQueue(queueItems) {
+                const list = document.getElementById('queue-list');
+                const countBadge = document.getElementById('queue-count');
+                if (!list) return;
+
+                // 1. Filter
+                let items = queueItems;
+                if (this.queueFilter !== 'all') {
+                    items = queueItems.filter(j => j.status === this.queueFilter);
+                }
+
+                // 2. Count
+                const activeCount = queueItems.filter(j => j.status !== 'done' && j.status !== 'error').length;
+                if (countBadge) {
+                    if (activeCount > 0) { countBadge.innerText = activeCount; countBadge.classList.remove('hidden'); }
+                    else { countBadge.classList.add('hidden'); }
+                }
+
+                if (items.length === 0) {
+                    if (list.children.length === 0 || list.querySelector('.empty-state'))
+                        list.innerHTML = `<div class="empty-state text-center py-20 opacity-30 fade-in"><i class="fas fa-wind text-4xl mb-3"></i><p>No ${this.queueFilter === 'all' ? 'active' : this.queueFilter} generations</p></div>`;
+                    else {
+                        // Clean up existing if becoming empty
+                        Array.from(list.children).forEach(c => c.remove());
+                        list.innerHTML = `<div class="empty-state text-center py-20 opacity-30 fade-in"><i class="fas fa-wind text-4xl mb-3"></i><p>No ${this.queueFilter === 'all' ? 'active' : this.queueFilter} generations</p></div>`;
+                    }
+                    return;
+                } else {
+                    const es = list.querySelector('.empty-state');
+                    if (es) es.remove();
+                }
+
+                // 3. Diff / Update
+                // Remove deleted
+                const currentIds = items.map(j => j.id);
+                Array.from(list.children).forEach(el => {
+                    if (!currentIds.includes(el.id.replace('card-', ''))) el.remove();
+                });
+
+                // Create or Update
+                items.forEach(job => {
+                    let el = document.getElementById(`card-${job.id}`);
+
+                    // Template Data
+                    const statusColor = job.status === 'done' ? 'text-emerald-400' : job.status === 'error' ? 'text-red-400' : 'text-violet-400';
+                    const iconClass = job.status === 'processing' ? 'fa-spinner fa-spin text-violet-400' : job.status === 'error' ? 'fa-exclamation-circle text-red-500' : 'fa-clock text-slate-500';
+                    const notes = job.notes ? `<div class="text-xs text-amber-200 mt-1 italic truncate js-notes"><i class="fas fa-sticky-note mr-1"></i>${job.notes}</div>` : '';
+
+                    if (!el) {
+                        // Create New
+                        el = document.createElement('div');
+                        el.id = `card-${job.id}`;
+                        el.className = "glass p-4 rounded-xl flex items-center gap-4 fade-in cursor-pointer hover:bg-slate-800/50 transition-colors group relative border border-white/5 hover:border-violet-500/30";
+                        el.onclick = () => window.app.openJobDetails(job.id);
+
+                        el.innerHTML = `
+                        <!-- Preview -->
+                        <div class="w-20 h-20 bg-slate-800 rounded-lg flex-shrink-0 flex items-center justify-center overflow-hidden border border-white/5 relative js-preview">
+                             <!-- Content injected below -->
+                        </div>
+                        
+                        <!-- Metadata -->
+                        <div class="flex-grow min-w-0 grid grid-cols-2 md:grid-cols-4 gap-4 items-center">
+                            <div class="col-span-2 md:col-span-2">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="font-mono text-[10px] text-slate-500 bg-slate-900/50 px-1.5 py-0.5 rounded border border-white/5">ID: ${job.id.split('-')[0]}...</span>
+                                    <span class="text-[10px] uppercase tracking-wider font-bold js-status ${statusColor}">${job.status}</span>
+                                </div>
+                                <div class="text-xs text-slate-400 truncate">${new Date(job.created).toLocaleString()}</div>
+                                <div class="js-notes-container">${notes}</div>
+                            </div>
+                            <div class="hidden md:block js-metrics"></div>
+                            <div class="hidden md:block text-right">
+                                <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-0.5">Model</div>
+                                <div class="text-xs text-slate-300 truncate max-w-[150px]" title="${job.params?.model || 'Unknown'}">${job.params?.model || 'Unknown'}</div>
+                            </div>
+                        </div>
+                        <div class="text-slate-600 group-hover:text-violet-400 transition-colors"><i class="fas fa-chevron-right"></i></div>
+                        `;
+                        list.appendChild(el);
+                    }
+
+                    // Update contents (Blind update is cheap enough for text, images handled carefully)
+                    // Status
+                    const statusEl = el.querySelector('.js-status');
+                    if (statusEl.innerText !== job.status) {
+                        statusEl.innerText = job.status;
+                        statusEl.className = `text-[10px] uppercase tracking-wider font-bold js-status ${statusColor}`;
+                    }
+
+                    // Notes
+                    const noteCont = el.querySelector('.js-notes-container');
+                    if (noteCont.innerHTML !== notes) noteCont.innerHTML = notes;
+
+                    // Preview
+                    const previewContainer = el.querySelector('.js-preview');
+                    if (job.status === 'done' && job.result?.generations) {
+                        if (!previewContainer.querySelector('img')) {
+                            previewContainer.innerHTML = `<img src="${job.result.generations[0].img}" class="w-full h-full object-cover fade-in">`;
+                        }
+                    } else {
+                        // Simplify: Just overwrite icon if not done
+                        if (!previewContainer.querySelector('img')) {
+                            previewContainer.innerHTML = `<i class="fas ${iconClass} text-xl"></i>
+                             ${job.status === 'processing' ? `<div class="absolute bottom-0 left-0 right-0 h-1 bg-slate-700"><div class="h-full bg-violet-500 animate-pulse w-full"></div></div>` : ''}`;
+                        }
+                    }
+
+                    // Metrics
+                    const metricsEl = el.querySelector('.js-metrics');
+                    const metricsHTML = job.status === 'processing'
+                        ? `<div class="text-xs text-slate-400"><i class="fas fa-users mr-1 opacity-50"></i>Pos: ${job.position}</div>
+                                       <div class="text-xs text-slate-400"><i class="fas fa-hourglass-half mr-1 opacity-50"></i>${job.wait_time}s</div>`
+                        : job.status === 'done'
+                            ? `<div class="text-xs text-slate-500">Finished</div>` : '';
+                    if (metricsEl.innerHTML !== metricsHTML) metricsEl.innerHTML = metricsHTML;
+                });
+            },
+
+            renderQueue_OLD(queueItems) {
+                list.innerHTML = `<div class="text-center py-20 opacity-30"><i class="fas fa-wind text-4xl mb-3"></i><p>No active generations</p></div>`;
+                return;
+            },
+
+
+
+            setupListeners() {
+                const genBtn = document.getElementById('btn-generate');
+                if (genBtn) genBtn.addEventListener('click', () => this.handleGenerate());
+
+                const saveBtn = document.getElementById('btn-save-settings');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', () => {
+                        const key = document.getElementById('setting-horde-key').value;
+                        const token = document.getElementById('setting-gh-token').value;
+                        const repo = document.getElementById('setting-gh-repo').value;
+                        const discordUrl = document.getElementById('setting-discord-url').value;
+                        window.settingsStore.setHordeKey(key);
+                        if (token && repo) window.settingsStore.addGitHubProfile("Default", token, repo);
+                        if (discordUrl) window.settingsStore.addDiscordWebhook("Default", discordUrl);
+                        window.notifications.show("Settings Saved!", 'success');
+                        this.checkHordeConnection();
+                    });
+                }
+                const galleryBtn = document.querySelector('#view-gallery button i.fa-sync-alt');
+                if (galleryBtn) galleryBtn.parentElement.addEventListener('click', () => this.loadGallery());
+
+                const dateSelect = document.getElementById('gallery-date-filter');
+                if (dateSelect) dateSelect.addEventListener('change', () => this.loadGallery());
+
+                const promptInput = document.getElementById('prompt-input');
+                if (promptInput) {
+                    promptInput.addEventListener('input', (e) => {
+                        const counter = document.getElementById('prompt-count');
+                        if (counter) counter.innerText = `${e.target.value.length} chars`;
+                    });
+                }
+                if (clearBtn) clearBtn.addEventListener('click', () => { if (this.queue) this.queue.clearFinished(); });
+            },
+
+            openJobDetails(id) {
+                const job = this.queue.jobs.find(j => j.id === id);
+                if (!job) return;
+
+                // Identify User Only Params
+                let userOnlyKeys = [];
+                try {
+                    const schema = JSON.parse(localStorage.getItem('AG_HORDE_FORM_SCHEMA') || '[]');
+                    const findUserOnly = (items) => {
+                        items.forEach(item => {
+                            if (item.user_only) userOnlyKeys.push(item.key);
+                            if (item.type === 'group' && item.children) findUserOnly(item.children);
+                        });
+                    };
+                    findUserOnly(schema);
+                } catch (e) { }
+
+                const prompt = job.prompt.split('###')[0].trim();
+                const negative = job.prompt.split('###')[1] ? job.prompt.split('###')[1].trim() : '';
+
+                // Generate Metadata HTML
+                const metaGrid = Object.entries(job.params || {}).map(([key, val]) => {
+                    if (key === 'prompt' || key === 'negative') return ''; // Skip prompt params
+                    const isUserOnly = userOnlyKeys.includes(key);
+                    return `
+                        <div class="glass bg-slate-900/50 p-2 rounded border ${isUserOnly ? 'border-amber-500/30' : 'border-white/5'}">
+                            <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
+                                ${key} ${isUserOnly ? '<i class="fas fa-lock text-amber-500 text-[10px]" title="User Only"></i>' : ''}
+                            </div>
+                            <div class="text-xs font-mono text-slate-300 break-all">${val}</div>
+                        </div>
+                    `;
+                }).join('');
+
+                const html = `
+                    <div class="h-[70vh] flex flex-col">
+                        <!-- Header -->
+                        <div class="mb-4 space-y-3">
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="text-xs font-mono bg-slate-800 px-2 py-0.5 rounded text-slate-400 select-all">${job.id}</span>
+                                        <span class="text-xs px-2 py-0.5 rounded font-bold uppercase ${job.status === 'done' ? 'bg-emerald-500/20 text-emerald-400' : job.status === 'error' ? 'bg-red-500/20 text-red-400' : 'bg-violet-500/20 text-violet-400'}">${job.status}</span>
+                                    </div>
+                                    <div class="text-[10px] text-slate-500">${new Date(job.created).toLocaleString()}</div>
+                                </div>
+                                <!-- Tabs -->
+                                <div class="flex bg-slate-900/50 p-1 rounded-lg shrink-0">
+                                    <button onclick="window.app.switchModalTab('overview')" id="tab-btn-overview" class="tab-btn active text-xs px-3 py-1.5 rounded-md transition-all bg-slate-700 text-white shadow">Overview</button>
+                                    <button onclick="window.app.switchModalTab('debug')" id="tab-btn-debug" class="tab-btn text-xs px-3 py-1.5 rounded-md transition-all text-slate-400 hover:text-white">Debug JSON</button>
+                                </div>
+                            </div>
+
+                            <!-- Actions Toolbar -->
+                            <div class="flex gap-2 border-t border-white/5 pt-3">
+                                <button onclick="window.app.reuseJobSettings('${job.id}')" class="glass-btn flex-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300" title="Copy Settings to Generate">
+                                    <i class="fas fa-copy mr-1.5"></i> Reuse Settings
+                                </button>
+                                ${job.status === 'done' ? `
+                                <button onclick="window.app.saveJobAsPreset('${job.id}')" class="glass-btn flex-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300" title="Save as Preset">
+                                    <i class="fas fa-save mr-1.5"></i> Save Preset
+                                </button>
+                                <button onclick="window.app.downloadJobImage('${job.id}')" class="glass-btn flex-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300" title="Download">
+                                    <i class="fas fa-download mr-1.5"></i> Download
+                                </button>
+                                ` : ''}
+                                ${job.status === 'error' ? `
+                                <button onclick="window.app.resumeJobTracking('${job.id}')" class="glass-btn flex-1 text-xs bg-amber-600/20 hover:bg-amber-600 text-amber-500 hover:text-white" title="Attempt to Resume Tracking">
+                                    <i class="fas fa-redo mr-1.5"></i> Resume Tracking
+                                </button>
+                                ` : ''}
+                                <button onclick="window.app.deleteJob('${job.id}')" class="glass-btn flex-none w-10 text-xs bg-red-900/20 hover:bg-red-900/50 text-red-400 hover:text-red-200" title="Cancel & Remove">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Content -->
+                        <div class="flex-grow overflow-y-auto custom-scroll pr-2 -mr-2">
+                            
+                            <!-- TAB: Overview -->
+                            <div id="tab-content-overview" class="space-y-6">
+                                <!-- Image Preview -->
+                                ${job.status === 'done' && job.result?.generations
+                        ? `<div class="rounded-xl overflow-hidden border border-white/10 shadow-2xl relative group">
+                                         <img src="${job.result.generations[0].img}" class="w-full h-auto max-h-[400px] object-contain bg-black/50" onclick="window.open(this.src, '_blank')">
+                                         <div class="absolute bottom-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                             <button onclick="window.open('${job.result.generations[0].img}', '_blank')" class="glass-btn text-xs bg-black/50 hover:bg-black/80"><i class="fas fa-external-link-alt"></i> Full Size</button>
+                                             <button onclick="window.app.queue.sendToDiscord('${job.id}')" class="glass-btn text-xs bg-indigo-600/80 hover:bg-indigo-600"><i class="fab fa-discord"></i> Discord</button>
+                                         </div>
+                                       </div>`
+                        : ''
+                    }
+
+                                <!-- Prompt -->
+                                <div class="space-y-2">
+                                    <div class="glass p-3 rounded-lg border-l-2 border-violet-500">
+                                        <div class="text-[10px] text-violet-400 uppercase tracking-wider mb-1">Positive Prompt</div>
+                                        <div class="text-sm text-slate-200 leading-relaxed max-h-32 overflow-y-auto">${prompt}</div>
+                                    </div>
+                                    ${negative ? `
+                                    <div class="glass p-3 rounded-lg border-l-2 border-red-500">
+                                        <div class="text-[10px] text-red-400 uppercase tracking-wider mb-1">Negative</div>
+                                        <div class="text-xs text-slate-300 leading-relaxed">${negative}</div>
+                                    </div>` : ''}
+                                </div>
+
+                                <!-- Metadata Grid -->
+                                <div>
+                                    <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Generation Parameters</div>
+                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                        ${metaGrid}
+                                    </div>
+                                    ${userOnlyKeys.length > 0 ? '<div class="mt-2 text-[10px] text-amber-500 flex items-center gap-1"><i class="fas fa-lock"></i> Highlighted parameters are marked as User Only</div>' : ''}
+                                </div>
+                                
+                                <!-- Personal Notes -->
+                                <div class="glass p-4 rounded-xl border border-white/5">
+                                    <div class="flex justify-between items-center mb-2">
+                                        <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Personal Notes</label>
+                                        <button onclick="window.app.saveJobNotes('${job.id}')" class="text-xs text-violet-400 hover:text-white transition-colors">Save Notes</button>
+                                    </div>
+                                    <textarea id="job-notes-${job.id}" class="w-full bg-slate-900/50 border border-slate-700/50 rounded-lg p-2 text-xs text-slate-300 focus:border-violet-500/50 outline-none resize-y min-h-[60px]" placeholder="Add your notes here...">${job.notes || ''}</textarea>
+                                </div>
+                            </div>
+
+                            <!-- TAB: Debug -->
+                            <div id="tab-content-debug" class="hidden space-y-4">
+                                <div class="flex gap-2 mb-4">
+                                     <button onclick="window.open('${window.settingsStore.getHordeUrl()}/generate/check/${job.id}', '_blank')" class="glass-btn flex-1 text-xs bg-slate-800 text-slate-300 hover:text-white">
+                                        <i class="fas fa-external-link-alt mr-1"></i> Open Check Endpoint
+                                     </button>
+                                     <button onclick="window.open('${window.settingsStore.getHordeUrl()}/generate/status/${job.id}', '_blank')" class="glass-btn flex-1 text-xs bg-slate-800 text-slate-300 hover:text-white">
+                                        <i class="fas fa-external-link-alt mr-1"></i> Open Status Endpoint
+                                     </button>
+                                </div>
+                                <div class="space-y-4">
+                                    <div>
+                                        <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Request Payload (Params)</div>
+                                        <pre class="glass bg-slate-950 p-4 rounded-xl text-[10px] font-mono text-emerald-300 overflow-x-auto custom-scroll">${JSON.stringify(job.params, null, 2)}</pre>
+                                    </div>
+                                    <div>
+                                        <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Horde Response</div>
+                                        <pre class="glass bg-slate-950 p-4 rounded-xl text-[10px] font-mono text-blue-300 overflow-x-auto custom-scroll">${JSON.stringify(job.result || {}, null, 2)}</pre>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                this.openModal('Job Details', html);
+            },
+
+            switchModalTab(tab) {
+                document.querySelectorAll('.tab-btn').forEach(b => {
+                    b.classList.remove('bg-slate-700', 'text-white', 'shadow');
+                    b.classList.add('text-slate-400');
+                });
+                document.getElementById(`tab-btn-${tab}`).classList.add('bg-slate-700', 'text-white', 'shadow');
+                document.getElementById(`tab-btn-${tab}`).classList.remove('text-slate-400');
+
+                document.getElementById('tab-content-overview').classList.add('hidden');
+                document.getElementById('tab-content-debug').classList.add('hidden');
+                document.getElementById(`tab-content-${tab}`).classList.remove('hidden');
+            },
+
+            reuseJobSettings(id) {
+                const job = this.queue.jobs.find(j => j.id === id);
+                if (!job) return;
+
+                document.getElementById('prompt-input').value = job.prompt.split('###')[0].trim();
+                const negative = job.prompt.split('###')[1];
+                document.getElementById('negative-prompt-input').value = negative ? negative.trim() : '';
+
+                if (job.params.model) document.getElementById('model-select').value = job.params.model;
+
+                // Restore form logic
+                window.formEngine.setValues(document.getElementById('dynamic-form-container'), { params: job.params });
+
+                this.closeModal();
+                this.router.navigate('generate');
+                window.notifications.show("Settings restored from job!", 'success');
+            },
+
+            async saveJobAsPreset(id) {
+                const job = this.queue.jobs.find(j => j.id === id);
+                if (!job) return;
+
+                const name = await window.dialogs.prompt("Save Preset", "Enter a name for this preset:", "Job Preset");
+                if (!name) return;
+
+                const data = {
+                    prompt: job.prompt.split('###')[0].trim(),
+                    negative: job.prompt.split('###')[1] ? job.prompt.split('###')[1].trim() : '',
+                    model: job.params.model,
+                    form: { params: job.params }
+                };
+
+                window.presetManager.add(name, data);
+                window.notifications.show(`Preset '${name}' saved!`, 'success');
+            },
+
+            downloadJobImage(id) {
+                const job = this.queue.jobs.find(j => j.id === id);
+                if (!job || !job.result?.generations) return;
+                const link = document.createElement('a');
+                link.href = job.result.generations[0].img;
+                link.download = `antigravity_${job.id}.png`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+
+            async deleteJob(id) {
+                if (!await window.dialogs.confirm("Remove Job", "Are you sure? This will cancel the request on the AI Horde.")) return;
+
+                try {
+                    await window.hordeClient.cancelRequest(id);
+                    window.notifications.show("Cancellation request sent", 'info');
+                } catch (e) { console.warn("Cancel failed", e); }
+
+                this.queue.removeJob(id);
+                this.renderQueue(this.queue.jobs);
+                this.closeModal();
+            },
+
+            saveJobNotes(id) {
+                const notes = document.getElementById(`job-notes-${id}`).value;
+                const job = this.queue.jobs.find(j => j.id === id);
+                if (job) {
+                    job.notes = notes;
+                    this.queue.save();
+                    window.notifications.show("Notes saved", 'success');
+                    this.renderQueue(this.queue.jobs); // Refresh card
+                }
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.app.init();
+        });
+    </script>
+</body>
+
+</html>
