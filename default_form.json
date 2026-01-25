@@ -1,0 +1,437 @@
+[
+  {
+    "type": "group",
+    "label": "Generation Basics",
+    "open": true,
+    "children": [
+      {
+        "type": "slider",
+        "key": "width",
+        "label": "Width",
+        "default": 1024,
+        "step": 64,
+        "min": 64,
+        "max": 3072
+      },
+      {
+        "type": "slider",
+        "key": "height",
+        "label": "Height",
+        "default": 1024,
+        "step": 64,
+        "min": 64,
+        "max": 3072
+      },
+      {
+        "type": "slider",
+        "key": "steps",
+        "label": "Steps",
+        "default": 25,
+        "min": 1,
+        "max": 30
+      },
+      {
+        "type": "slider",
+        "key": "cfg_scale",
+        "label": "Guidance Scale (CFG)",
+        "default": 4,
+        "step": 0.5,
+        "min": 1,
+        "max": 12
+      },
+      {
+        "type": "select",
+        "key": "sampler_name",
+        "label": "Sampler",
+        "default": "k_dpmpp_sde",
+        "options": [
+          "k_euler_a",
+          "k_dpmpp_2s_a",
+          "k_dpmpp_sde",
+          "k_lms",
+          "k_heun",
+          "k_dpm_2",
+          "DDIM",
+          "k_dpm_adaptive"
+        ]
+      },
+      {
+        "type": "text",
+        "key": "seed",
+        "label": "Seed",
+        "placeholder": "Empty for random"
+      },
+      {
+        "type": "slider",
+        "key": "seed_variation",
+        "label": "Seed Variation",
+        "default": 1,
+        "min": 0,
+        "max": 100,
+        "step": 1
+      },
+      {
+        "type": "slider",
+        "key": "clip_skip",
+        "label": "Clip Skip",
+        "default": 1,
+        "min": 1,
+        "max": 12,
+        "step": 1
+      },
+      {
+        "type": "slider",
+        "key": "n",
+        "label": "Batch Count",
+        "default": 1,
+        "min": 1,
+        "max": 20,
+        "step": 1
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "label": "Upscaling & Refinement",
+    "open": false,
+    "children": [
+      {
+        "type": "boolean",
+        "key": "hires_fix",
+        "label": "Hires Fix",
+        "default": false
+      },
+      {
+        "type": "slider",
+        "key": "hires_fix_denoising_strength",
+        "label": "Hires Fix Denoise Strength",
+        "default": 0.5,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "type": "slider",
+        "key": "facefixer_strength",
+        "label": "Face Fixer Strength",
+        "default": 0,
+        "min": 0,
+        "max": 1,
+        "step": 0.05
+      },
+      {
+        "type": "select",
+        "key": "post_processing",
+        "label": "Post Processing",
+        "default": "",
+        "options": [
+          "",
+          "GFPGAN",
+          "CodeFormers",
+          "RealESRGAN_x4plus",
+          "RealESRGAN_x4plus_anime_6B",
+          "NMKD_Siax_200k"
+        ]
+      },
+      {
+        "type": "boolean",
+        "key": "tiling",
+        "label": "Tiling",
+        "default": false
+      },
+      {
+        "type": "boolean",
+        "key": "karras",
+        "label": "Karras Scheduling",
+        "default": true
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "label": "ControlNet & Img2Img",
+    "open": false,
+    "children": [
+      {
+        "type": "slider",
+        "key": "denoising_strength",
+        "label": "Denoising Strength (Img2Img)",
+        "default": 0.75,
+        "min": 0.01,
+        "max": 1,
+        "step": 0.01
+      },
+      {
+        "type": "select",
+        "key": "control_type",
+        "label": "ControlNet Type",
+        "default": "",
+        "options": [
+          "",
+          "canny",
+          "depth",
+          "normal",
+          "hed",
+          "scribble",
+          "mlsd",
+          "openpose",
+          "seg"
+        ]
+      },
+      {
+        "type": "boolean",
+        "key": "image_is_control",
+        "label": "Source Image is Control Map",
+        "default": false
+      },
+      {
+        "type": "boolean",
+        "key": "return_control_map",
+        "label": "Return Control Map",
+        "default": false
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "label": "Models & Conditioning",
+    "open": false,
+    "children": [
+      {
+        "type": "list",
+        "key": "loras",
+        "label": "LoRAs",
+        "item_schema": {
+          "type": "object",
+          "fields": [
+            {
+              "type": "text",
+              "key": "name",
+              "label": "LoRA Name"
+            },
+            {
+              "type": "slider",
+              "key": "model",
+              "label": "Model Strength",
+              "default": 1,
+              "min": 0,
+              "max": 2,
+              "step": 0.05
+            },
+            {
+              "type": "slider",
+              "key": "clip",
+              "label": "CLIP Strength",
+              "default": 1,
+              "min": 0,
+              "max": 2,
+              "step": 0.05
+            },
+            {
+              "type": "text",
+              "key": "inject_trigger",
+              "label": "Trigger Text"
+            },
+            {
+              "type": "boolean",
+              "key": "is_version",
+              "label": "Is Version",
+              "default": false
+            }
+          ]
+        }
+      },
+      {
+        "type": "list",
+        "key": "tis",
+        "label": "Textual Inversions",
+        "item_schema": {
+          "type": "object",
+          "fields": [
+            {
+              "type": "text",
+              "key": "name",
+              "label": "TI Name"
+            },
+            {
+              "type": "select",
+              "key": "inject_ti",
+              "label": "Injection Target",
+              "default": "prompt",
+              "options": [
+                "prompt",
+                "negative_prompt"
+              ]
+            },
+            {
+              "type": "slider",
+              "key": "strength",
+              "label": "Strength",
+              "default": 1,
+              "min": 0,
+              "max": 2,
+              "step": 0.05
+            }
+          ]
+        }
+      },
+      {
+        "type": "list",
+        "key": "extra_texts",
+        "label": "Extra Prompt Texts",
+        "item_schema": {
+          "type": "object",
+          "fields": [
+            {
+              "type": "textarea",
+              "key": "text",
+              "label": "Text"
+            },
+            {
+              "type": "text",
+              "key": "reference",
+              "label": "Reference"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "label": "Workflow & Output",
+    "open": false,
+    "children": [
+      {
+        "type": "select",
+        "key": "workflow",
+        "label": "Workflow",
+        "default": "",
+        "options": [
+          "",
+          "qr_code"
+        ]
+      },
+      {
+        "type": "boolean",
+        "key": "transparent",
+        "label": "Transparent Background",
+        "default": false
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "label": "Horde Cloud Settings",
+    "open": false,
+    "children": [
+      {
+        "type": "boolean",
+        "key": "nsfw",
+        "label": "Allow NSFW",
+        "default": true
+      },
+      {
+        "type": "boolean",
+        "key": "censor_nsfw",
+        "label": "Censor NSFW",
+        "default": false
+      },
+      {
+        "type": "boolean",
+        "key": "shared",
+        "label": "Share to LAION (Kudos)",
+        "default": false
+      },
+      {
+        "type": "boolean",
+        "key": "r2",
+        "label": "R2 Storage",
+        "default": true
+      },
+      {
+        "type": "boolean",
+        "key": "trusted_workers",
+        "label": "Trusted Workers Only",
+        "default": false
+      },
+      {
+        "type": "boolean",
+        "key": "validated_backends",
+        "label": "Validated Backends Only",
+        "default": true
+      },
+      {
+        "type": "boolean",
+        "key": "slow_workers",
+        "label": "Allow Slow Workers",
+        "default": true
+      },
+      {
+        "type": "boolean",
+        "key": "extra_slow_workers",
+        "label": "Allow Extra Slow Workers",
+        "default": false
+      }
+    ]
+  },
+  {
+    "type": "group",
+    "label": "Advanced Horde Controls",
+    "open": false,
+    "children": [
+      {
+        "type": "boolean",
+        "key": "worker_blacklist",
+        "label": "Enable Worker Blacklist",
+        "default": false
+      },
+      {
+        "type": "boolean",
+        "key": "disable_batching",
+        "label": "Disable Batching",
+        "default": false
+      },
+      {
+        "type": "boolean",
+        "key": "allow_downgrade",
+        "label": "Allow Downgrade",
+        "default": false
+      },
+      {
+        "type": "boolean",
+        "key": "replacement_filter",
+        "label": "Enable Replacement Filter",
+        "default": true
+      },
+      {
+        "type": "boolean",
+        "key": "dry_run",
+        "label": "Dry Run",
+        "default": false
+      },
+      {
+        "type": "text",
+        "key": "proxied_account",
+        "label": "Proxied Account"
+      },
+      {
+        "type": "text",
+        "key": "webhook",
+        "label": "Webhook URL"
+      },
+      {
+        "type": "text",
+        "key": "style",
+        "label": "Style UUID"
+      }
+    ]
+  },
+  {
+    "type": "textarea",
+    "key": "notes",
+    "label": "Personal Notes",
+    "user_only": true,
+    "placeholder": "This text is not sent to the AI..."
+  }
+]
