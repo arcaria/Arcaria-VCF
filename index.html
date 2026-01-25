@@ -286,15 +286,20 @@
                         <h2 class="text-2xl font-bold text-white">Queue</h2>
                         <div class="bg-slate-900/50 p-1 rounded-lg flex gap-1">
                             <button onclick="window.app.setQueueFilter('all')" id="qf-all"
-                                class="text-[10px] px-2 py-1 rounded bg-slate-700 text-white transition-colors">All</button>
+                                class="text-[10px] px-2 py-1 rounded bg-slate-700 text-white transition-colors">All
+                                <span id="count-all" class="opacity-60 ml-1">0</span></button>
                             <button onclick="window.app.setQueueFilter('waiting')" id="qf-waiting"
-                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Waiting</button>
+                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Waiting
+                                <span id="count-waiting" class="opacity-60 ml-1">0</span></button>
                             <button onclick="window.app.setQueueFilter('processing')" id="qf-processing"
-                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Processing</button>
+                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Processing
+                                <span id="count-processing" class="opacity-60 ml-1">0</span></button>
                             <button onclick="window.app.setQueueFilter('done')" id="qf-done"
-                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Finished</button>
+                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Finished
+                                <span id="count-done" class="opacity-60 ml-1">0</span></button>
                             <button onclick="window.app.setQueueFilter('error')" id="qf-error"
-                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Error</button>
+                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Error
+                                <span id="count-error" class="opacity-60 ml-1">0</span></button>
                         </div>
                     </div>
                     <div class="flex gap-2">
@@ -666,24 +671,65 @@
                 return await res.json();
             }
 
-            async sendToDiscord(job) {
+            async sendToDiscord(job, content = "") {
                 const discord = window.settingsStore.getActiveDiscord();
                 if (!discord) throw new Error("No configured Discord Webhook");
                 if (!job.result?.generations?.[0]) throw new Error("No image to send");
 
-                const payload = {
-                    content: `**Prompt:** ${job.prompt}`,
+                // 1. Fetch Image Blob
+                const imgUrl = job.result.generations[0].img;
+                const imgRes = await fetch(imgUrl);
+                const imgBlob = await imgRes.blob();
+
+                // 2. Prepare Metadata File
+                const meta = {
+                    id: job.id,
+                    prompt: job.prompt,
+                    params: job.params,
+                    result: job.result,
+                    notes: job.notes,
+                    created: job.created,
+                    model: job.params?.model || 'Unknown'
+                };
+                const metaBlob = new Blob([JSON.stringify(meta, null, 2)], { type: 'application/json' });
+
+                // 3. Construct Payload
+                const formData = new FormData();
+
+                // Content/Embeds
+                const payloadJson = {
+                    content: content || `**Generation Result**`,
                     embeds: [{
-                        title: "Generation Result",
-                        image: { url: job.result.generations[0].img },
-                        footer: { text: `Model: ${job.params?.model || 'Unknown'}` }
+                        title: "Generation Metadata",
+                        description: `**Prompt:** ${job.prompt.substring(0, 1000)}${job.prompt.length > 1000 ? '...' : ''}`,
+                        color: 0x8b5cf6, // Violet
+                        fields: [
+                            { name: "Model", value: job.params?.model || "Unknown", inline: true },
+                            { name: "Steps", value: String(job.params?.steps || "?"), inline: true },
+                            { name: "CFG Scale", value: String(job.params?.cfg_scale || "?"), inline: true },
+                            { name: "Seed", value: String(job.params?.seed || "Random"), inline: true },
+                            { name: "Sampler", value: job.params?.sampler_name || "k_euler", inline: true },
+                            { name: "Scheduler", value: job.params?.scheduler || "karras", inline: true }
+                        ],
+                        footer: { text: `Horde ID: ${job.id}` },
+                        timestamp: new Date().toISOString()
                     }]
                 };
 
+                formData.append('payload_json', JSON.stringify(payloadJson));
+                formData.append('files[0]', imgBlob, `antigravity_${job.id}.png`);
+                formData.append('files[1]', metaBlob, `metadata_${job.id}.json`);
+
+                // 4. Send
                 const res = await fetch(discord.url, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                    method: 'POST',
+                    body: formData // No headers (browser sets boundary)
                 });
-                if (!res.ok) throw new Error("Discord Webhook Failed");
+
+                if (!res.ok) {
+                    const txt = await res.text();
+                    throw new Error(`Webhook Failed: ${res.status} ${txt}`);
+                }
             }
         }
         window.storageClient = new StorageClient();
@@ -1009,9 +1055,26 @@
                 this.queue = [];
                 this.intervalId = null;
                 this.onUpdate = onUpdate;
+
+                // Load from storage
+                try {
+                    const stored = localStorage.getItem('AG_HORDE_QUEUE');
+                    if (stored) {
+                        this.queue = JSON.parse(stored);
+                        // Resume polling if needed
+                        if (this.queue.some(j => j.status !== 'done' && j.status !== 'error')) {
+                            this.startPolling();
+                        }
+                    }
+                } catch (e) { console.error("Failed to load queue", e); }
+                this.notify(); // Force initial render
             }
 
             get jobs() { return this.queue; }
+
+            save() {
+                localStorage.setItem('AG_HORDE_QUEUE', JSON.stringify(this.queue));
+            }
 
             async handleAutoUpload(job) {
                 try {
@@ -1029,16 +1092,39 @@
             async sendToDiscord(jobId) {
                 const job = this.queue.find(j => j.id === jobId);
                 if (!job) return;
+
+                let messages = [];
+                // 1. User-Only Form Field "notes"
+                if (job.params && job.params.notes && job.params.notes.trim()) {
+                    messages.push(job.params.notes.trim());
+                }
+                // 2. Personal Notes (Textarea)
+                if (job.notes && job.notes.trim()) {
+                    messages.push(job.notes.trim());
+                }
+
+                let content = messages.join('\n\n');
+
+                // 3. Prompt if empty
+                if (!content) {
+                    content = await window.dialogs.prompt("Discord Message", "Enter a caption/notes for this post:", "Generated with Antigravity");
+                    if (content === null) return; // Cancelled
+                }
+
                 try {
-                    await window.storageClient.sendToDiscord(job);
-                    alert("Sent to Discord!");
-                } catch (e) { alert("Discord Error: " + e.message); }
+                    window.notifications.show("Uploading to Discord...", 'info');
+                    await window.storageClient.sendToDiscord(job, content);
+                    window.notifications.show("Sent to Discord!", 'success');
+                } catch (e) {
+                    console.error(e);
+                    window.notifications.show("Discord Error: " + e.message, 'error');
+                }
             }
 
             addJob(jobId, prompt, params, model) {
                 // Ensure model is stored
                 if (model && params && !params.model) params.model = model;
-                const job = { id: jobId, prompt: prompt, params: params, status: 'waiting', created: Date.now(), result: null, wait_time: 0, position: 0, notes: '' };
+                const job = { id: jobId, prompt: prompt, params: params, status: 'waiting', created: Date.now(), result: null, wait_time: 0, position: 0, notes: '', force_track: false };
                 this.queue.unshift(job);
                 this.startPolling();
                 this.notify();
@@ -1066,7 +1152,12 @@
                             job.status = 'done'; job.result = result;
                             this.handleAutoUpload(job);
                         } else if (!check.is_possible) {
-                            job.status = 'error'; job.result = { message: "Generation impossible (no workers)" };
+                            if (job.force_track) {
+                                job.status = 'waiting';
+                                job.result = { message: "Waiting for workers..." };
+                            } else {
+                                job.status = 'error'; job.result = { message: "Generation impossible (no workers)" };
+                            }
                         } else {
                             job.status = 'processing'; job.wait_time = check.wait_time; job.position = check.queue_position;
                         }
@@ -1076,7 +1167,10 @@
                 if (activeCount === 0) this.stopPolling();
             }
 
-            notify() { if (this.onUpdate) this.onUpdate(this.queue); }
+            notify() {
+                this.save();
+                if (this.onUpdate) this.onUpdate(this.queue);
+            }
         }
     </script>
 
@@ -1601,7 +1695,9 @@
                     const formValues = window.formEngine.getValues(document.getElementById('dynamic-form-container'));
                     const params = formValues.params;
                     const res = await window.hordeClient.generateImage(prompt, params, model);
-                    this.queue.addJob(res.id, prompt, params, model);
+                    // Store BOTH public and private (user_only) params
+                    const storedParams = { ...params, ...formValues.meta };
+                    this.queue.addJob(res.id, prompt, storedParams, model);
                     this.router.navigate('pending');
                     window.notifications.show("Generation started...", 'success');
                 } catch (e) {
@@ -1631,10 +1727,11 @@
                 const job = this.queue.jobs.find(j => j.id === id);
                 if (job) {
                     job.status = 'waiting';
-                    job.result = null; // Clear error result
-                    this.queue.notify(); // Triggers re-render
+                    job.result = null;
+                    job.force_track = true; // Force-ignore 'impossible' errors
+                    this.queue.notify();
                     this.closeModal();
-                    window.notifications.show("Resumed tracking job", 'success');
+                    window.notifications.show("Resumed tracking job (Forced)", 'success');
                 }
             },
 
@@ -1670,6 +1767,14 @@
                 const list = document.getElementById('queue-list');
                 const countBadge = document.getElementById('queue-count');
                 if (!list) return;
+
+                // Update Counts
+                const counts = { all: queueItems.length, waiting: 0, processing: 0, done: 0, error: 0 };
+                queueItems.forEach(j => { if (counts[j.status] !== undefined) counts[j.status]++; });
+                Object.keys(counts).forEach(key => {
+                    const el = document.getElementById(`count-${key}`);
+                    if (el) el.innerText = counts[key];
+                });
 
                 // 1. Filter
                 let items = queueItems;
