@@ -344,81 +344,76 @@
 
         <!-- View: Settings -->
         <div id="view-settings" class="view-section absolute inset-0 overflow-y-auto p-4 sm:p-8 hidden">
-            <div class="max-w-3xl mx-auto glass p-8 rounded-3xl">
+            <div class="max-w-4xl mx-auto glass p-8 rounded-3xl">
                 <h2 class="text-2xl font-bold mb-8 flex items-center gap-3">
                     <i class="fas fa-sliders-h text-violet-400"></i> Local Configuration
                 </h2>
 
-                <!-- Settings Form -->
-                <div class="space-y-8">
-                    <!-- Horde Section -->
+                <div class="space-y-10">
+
+                    <!-- 1. Horde Keys -->
                     <section class="space-y-4">
-                        <h3
-                            class="text-sm font-semibold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">
-                            AI Horde Connection</h3>
-                        <div class="grid gap-4">
-                            <div>
-                                <label class="block text-sm mb-1 text-slate-300">API Key</label>
-                                <div class="flex gap-2">
-                                    <input type="password" id="setting-horde-key" class="glass-input w-full font-mono"
-                                        placeholder="0000000000">
-                                    <button class="glass-btn bg-slate-700 hover:bg-slate-600" title="Reveal"><i
-                                            class="fas fa-eye"></i></button>
-                                </div>
-                                <p class="text-[10px] text-slate-500 mt-1">Leave as 0000000000 for anonymous mode
-                                    (slower)</p>
-                            </div>
+                        <div class="flex justify-between items-end border-b border-white/5 pb-2">
+                            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">AI Horde Keys</h3>
+                            <button onclick="window.app.openAddHordeKeyModal()"
+                                class="text-xs text-violet-400 hover:text-white flex items-center gap-1"><i
+                                    class="fas fa-plus"></i> Add Key</button>
+                        </div>
+                        <div id="settings-horde-list" class="space-y-3">
+                            <!-- Injected -->
                         </div>
                     </section>
 
-                    <!-- Data Section -->
+                    <!-- 1b. Horde API URL -->
                     <section class="space-y-4">
-                        <h3
-                            class="text-sm font-semibold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">
-                            Data Storage</h3>
-                        <div class="grid gap-4">
-                            <div>
-                                <label class="block text-sm mb-1 text-slate-300">GitHub Personal Access Token
-                                    (PAT)</label>
-                                <input type="password" id="setting-gh-token" class="glass-input w-full font-mono"
-                                    placeholder="github_pat_...">
-                            </div>
-                            <div>
-                                <label class="block text-sm mb-1 text-slate-300">Private Gallery Repo</label>
-                                <input type="text" id="setting-gh-repo" class="glass-input w-full font-mono"
-                                    placeholder="username/repo-name">
-                            </div>
+                        <div class="flex justify-between items-end border-b border-white/5 pb-2">
+                            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">AI Horde API URL
+                            </h3>
+                            <button onclick="window.app.openAddHordeUrlModal()"
+                                class="text-xs text-violet-400 hover:text-white flex items-center gap-1"><i
+                                    class="fas fa-plus"></i> Add URL</button>
+                        </div>
+                        <div id="settings-horde-url-list" class="space-y-3">
+                            <!-- Injected -->
                         </div>
                     </section>
 
-                    <!-- Discord Section -->
+                    <!-- 2. GitHub Repos -->
                     <section class="space-y-4">
-                        <h3
-                            class="text-sm font-semibold text-slate-400 uppercase tracking-wider border-b border-white/5 pb-2">
-                            Integrations</h3>
-                        <div class="grid gap-4">
-                            <div>
-                                <label class="block text-sm mb-1 text-slate-300">Discord Webhook URL</label>
-                                <input type="password" id="setting-discord-url" class="glass-input w-full font-mono"
-                                    placeholder="https://discord.com/api/webhooks/...">
-                                <p class="text-[10px] text-slate-500 mt-1">Used for 'Send to Discord' button.</p>
-                            </div>
+                        <div class="flex justify-between items-end border-b border-white/5 pb-2">
+                            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">GitHub Galleries
+                            </h3>
+                            <button onclick="window.app.openAddGitHubModal()"
+                                class="text-xs text-violet-400 hover:text-white flex items-center gap-1"><i
+                                    class="fas fa-plus"></i> Add Repo</button>
+                        </div>
+                        <div id="settings-github-list" class="space-y-3">
+                            <!-- Injected -->
+                        </div>
+                    </section>
+
+                    <!-- 3. Discord Webhooks -->
+                    <section class="space-y-4">
+                        <div class="flex justify-between items-end border-b border-white/5 pb-2">
+                            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Discord Webhooks
+                            </h3>
+                            <button onclick="window.app.openAddDiscordModal()"
+                                class="text-xs text-violet-400 hover:text-white flex items-center gap-1"><i
+                                    class="fas fa-plus"></i> Add Webhook</button>
+                        </div>
+                        <div id="settings-discord-list" class="space-y-3">
+                            <!-- Injected -->
                         </div>
                     </section>
 
                     <!-- Design Tool Link -->
-                    <section class="pt-4 border-t border-white/10">
+                    <section class="pt-8 border-t border-white/10">
                         <button onclick="app.router.navigate('designer')"
                             class="w-full py-4 rounded-xl border-2 border-dashed border-slate-700 hover:border-violet-500 hover:bg-violet-500/10 transition-all text-slate-400 hover:text-violet-300 font-medium flex flex-col items-center gap-2">
                             <i class="fas fa-edit text-xl"></i>
                             <span>Open Dynamic Form Designer</span>
                         </button>
                     </section>
-
-                    <div class="pt-4 flex justify-end">
-                        <button id="btn-save-settings" class="glass-btn bg-emerald-600 hover:bg-emerald-500 px-8">Save
-                            All Settings</button>
-                    </div>
                 </div>
             </div>
         </div>
@@ -485,7 +480,7 @@
     <!-- 2. Settings Store -->
     <script>
         const DEFAULTS = {
-            horde: { apiKey: '0000000000', apiUrl: 'https://aihorde.net/api/v2' },
+            horde: { keys: [], activeKeyId: null, apiUrl: 'https://aihorde.net/api/v2' },
             github: { profiles: [], activeProfileId: null },
             discord: { webhooks: [], activeWebhookId: null },
             gallery: { itemsPerPage: 20 }
@@ -493,16 +488,92 @@
 
         class SettingsStore {
             constructor() { this.data = this.load(); }
+
             load() {
                 const stored = localStorage.getItem('AG_HORDE_SETTINGS');
-                if (!stored) return JSON.parse(JSON.stringify(DEFAULTS));
-                return { ...DEFAULTS, ...JSON.parse(stored) };
+                let data = stored ? JSON.parse(stored) : JSON.parse(JSON.stringify(DEFAULTS));
+
+                // MIGRATION: v0.0.3 -> v0.0.4 (Horde Key List)
+                if (data.horde.apiKey) {
+                    const legacyKey = data.horde.apiKey;
+                    const id = crypto.randomUUID();
+                    data.horde.keys = [{ id, name: "Legacy Key", key: legacyKey }];
+                    data.horde.activeKeyId = id;
+                    delete data.horde.apiKey;
+                }
+                // MIGRATION: Horde URL List
+                if (data.horde.apiUrl && !data.horde.urls) {
+                    const id = crypto.randomUUID();
+                    data.horde.urls = [{ id, name: "Default", url: data.horde.apiUrl }];
+                    data.horde.activeUrlId = id;
+                    delete data.horde.apiUrl;
+                }
+
+                // Defaults
+                if (!data.horde.keys) data.horde.keys = [];
+                if (!data.horde.urls) {
+                    const id = crypto.randomUUID();
+                    data.horde.urls = [{ id, name: "Official Cluster", url: 'https://aihorde.net/api/v2' }];
+                    data.horde.activeUrlId = id;
+                }
+                if (!data.github.profiles) data.github.profiles = [];
+                if (!data.discord.webhooks) data.discord.webhooks = [];
+
+                return data;
             }
+
             save() { localStorage.setItem('AG_HORDE_SETTINGS', JSON.stringify(this.data)); }
 
-            getHordeKey() { return this.data.horde.apiKey; }
-            setHordeKey(key) { this.data.horde.apiKey = key || '0000000000'; this.save(); }
-            getHordeUrl() { return this.data.horde.apiUrl; }
+            // --- Horde Keys ---
+            getHordeKeys() { return this.data.horde.keys; }
+            getActiveHordeKey() { return this.data.horde.keys.find(k => k.id === this.data.horde.activeKeyId) || { key: '0000000000' }; }
+            getHordeKey() { return this.getActiveHordeKey().key; }
+
+            addHordeKey(name, key) {
+                const id = crypto.randomUUID();
+                this.data.horde.keys.push({ id, name, key });
+                if (!this.data.horde.activeKeyId) this.data.horde.activeKeyId = id;
+                this.save();
+                return id;
+            }
+            updateHordeKey(id, name, key) {
+                const item = this.data.horde.keys.find(k => k.id === id);
+                if (item) { item.name = name; item.key = key; this.save(); }
+            }
+            removeHordeKey(id) {
+                this.data.horde.keys = this.data.horde.keys.filter(k => k.id !== id);
+                if (this.data.horde.activeKeyId === id) this.data.horde.activeKeyId = this.data.horde.keys[0]?.id || null;
+                this.save();
+            }
+            setActiveHordeKey(id) { this.data.horde.activeKeyId = id; this.save(); }
+
+            // --- Horde URLs ---
+            getHordeUrls() { return this.data.horde.urls; }
+            getActiveHordeUrl() { return this.data.horde.urls.find(u => u.id === this.data.horde.activeUrlId) || { url: 'https://aihorde.net/api/v2' }; }
+            getHordeUrl() { return this.getActiveHordeUrl().url; } // Compat
+
+            addHordeUrl(name, url) {
+                const id = crypto.randomUUID();
+                this.data.horde.urls.push({ id, name, url });
+                if (!this.data.horde.activeUrlId) this.data.horde.activeUrlId = id;
+                this.save();
+                return id;
+            }
+            updateHordeUrl(id, name, url) {
+                const item = this.data.horde.urls.find(u => u.id === id);
+                if (item) { item.name = name; item.url = url; this.save(); }
+            }
+            removeHordeUrl(id) {
+                this.data.horde.urls = this.data.horde.urls.filter(u => u.id !== id);
+                if (this.data.horde.activeUrlId === id) this.data.horde.activeUrlId = this.data.horde.urls[0]?.id || null;
+                this.save();
+            }
+            setActiveHordeUrl(id) { this.data.horde.activeUrlId = id; this.save(); }
+
+
+            // --- GitHub ---
+            getGitHubProfiles() { return this.data.github.profiles; }
+            getActiveGitHub() { return this.data.github.profiles.find(p => p.id === this.data.github.activeProfileId); }
 
             addGitHubProfile(name, token, repo) {
                 const id = crypto.randomUUID();
@@ -511,16 +582,51 @@
                 this.save();
                 return id;
             }
-            getActiveGitHub() { return this.data.github.profiles.find(p => p.id === this.data.github.activeProfileId); }
+            updateGitHubProfile(id, name, token, repo) {
+                const item = this.data.github.profiles.find(p => p.id === id);
+                if (item) { item.name = name; item.token = token; item.repo = repo; this.save(); }
+            }
+            removeGitHubProfile(id) {
+                this.data.github.profiles = this.data.github.profiles.filter(p => p.id !== id);
+                if (this.data.github.activeProfileId === id) this.data.github.activeProfileId = this.data.github.profiles[0]?.id || null;
+                this.save();
+            }
+            setActiveGitHub(id) { this.data.github.activeProfileId = id; this.save(); }
 
-            addDiscordWebhook(name, url) {
+            // --- Discord ---
+            getDiscordWebhooks() { return this.data.discord.webhooks; }
+            getActiveDiscord() { return this.data.discord.webhooks.find(w => w.id === this.data.discord.activeWebhookId); }
+
+            addDiscordWebhook(name, url, channelType = 'forum', threadId = null) {
                 const id = crypto.randomUUID();
-                this.data.discord.webhooks.push({ id, name, url });
+                this.data.discord.webhooks.push({ id, name, url, channelType, threadId, threads: {} });
                 if (!this.data.discord.activeWebhookId) this.data.discord.activeWebhookId = id;
                 this.save();
                 return id;
             }
-            getActiveDiscord() { return this.data.discord.webhooks.find(w => w.id === this.data.discord.activeWebhookId); }
+            updateDiscordWebhook(id, name, url, channelType) {
+                const item = this.data.discord.webhooks.find(w => w.id === id);
+                if (item) {
+                    item.name = name;
+                    item.url = url;
+                    item.channelType = channelType;
+                    this.save();
+                }
+            }
+            removeDiscordWebhook(id) {
+                this.data.discord.webhooks = this.data.discord.webhooks.filter(w => w.id !== id);
+                if (this.data.discord.activeWebhookId === id) this.data.discord.activeWebhookId = this.data.discord.webhooks[0]?.id || null;
+                this.save();
+            }
+            setActiveDiscord(id) { this.data.discord.activeWebhookId = id; this.save(); }
+
+            saveDiscordThread(webhookId, dateKey, threadId) {
+                const wh = this.data.discord.webhooks.find(w => w.id === webhookId);
+                if (!wh) return;
+                if (!wh.threads) wh.threads = {};
+                wh.threads[dateKey] = threadId;
+                this.save();
+            }
         }
         window.settingsStore = new SettingsStore();
     </script>
@@ -676,6 +782,24 @@
                 if (!discord) throw new Error("No configured Discord Webhook");
                 if (!job.result?.generations?.[0]) throw new Error("No image to send");
 
+                // --- Thread Logic ---
+                const dateKey = new Date().toISOString().split('T')[0];
+                let url = discord.url;
+                let existingThreadId = null;
+
+                // Smart Threads only for 'forum' type (default)
+                if (discord.channelType !== 'text') {
+                    // Retrieve saved thread ID if exists
+                    existingThreadId = discord.threads ? discord.threads[dateKey] : null;
+
+                    if (existingThreadId) {
+                        url += `${url.includes('?') ? '&' : '?'}thread_id=${existingThreadId}`;
+                    } else {
+                        // Create new thread mode
+                        url += `${url.includes('?') ? '&' : '?'}wait=true`;
+                    }
+                }
+
                 // 1. Fetch Image Blob
                 const imgUrl = job.result.generations[0].img;
                 const imgRes = await fetch(imgUrl);
@@ -716,12 +840,17 @@
                     }]
                 };
 
+                // Only add thread_name if we are in Forum mode AND new thread
+                if (discord.channelType !== 'text' && !existingThreadId) {
+                    payloadJson.thread_name = `${dateKey} - ${discord.name}`;
+                }
+
                 formData.append('payload_json', JSON.stringify(payloadJson));
                 formData.append('files[0]', imgBlob, `antigravity_${job.id}.png`);
                 formData.append('files[1]', metaBlob, `metadata_${job.id}.json`);
 
                 // 4. Send
-                const res = await fetch(discord.url, {
+                const res = await fetch(url, {
                     method: 'POST',
                     body: formData // No headers (browser sets boundary)
                 });
@@ -729,6 +858,20 @@
                 if (!res.ok) {
                     const txt = await res.text();
                     throw new Error(`Webhook Failed: ${res.status} ${txt}`);
+                }
+
+                // 5. Save New Thread ID
+                if (!existingThreadId) {
+                    try {
+                        const msg = await res.json();
+                        // Discord returns the message object. The channel_id of the message IS the Thread ID in a forum channel context (or simple thread).
+                        if (msg.channel_id) {
+                            window.settingsStore.saveDiscordThread(discord.id, dateKey, msg.channel_id);
+                            console.log(`Saved new Daily Thread ID: ${msg.channel_id} for ${dateKey}`);
+                        }
+                    } catch (e) {
+                        console.warn("Failed to parse Discord response for Thread ID", e);
+                    }
                 }
             }
         }
@@ -1441,7 +1584,7 @@
             async init() {
                 console.log("Antigravity Horde SingleFile Initializing...");
                 this.queue = new QueueManager(this.renderQueue.bind(this));
-                this.loadSettingsUI();
+                this.renderSettings();
                 await this.loadDynamicForm();
                 this.checkHordeConnection();
                 this.loadModels();
@@ -1449,16 +1592,297 @@
                 this.setupListeners();
             },
 
-            loadSettingsUI() {
-                const keyInput = document.getElementById('setting-horde-key');
-                if (keyInput) keyInput.value = window.settingsStore.getHordeKey();
-                const gh = window.settingsStore.getActiveGitHub();
-                if (gh) {
-                    document.getElementById('setting-gh-token').value = gh.token;
-                    document.getElementById('setting-gh-repo').value = gh.repo;
+            renderSettings() {
+                this.renderHordeManager();
+                this.renderHordeUrlManager();
+                this.renderGitHubManager();
+                this.renderDiscordManager();
+            },
+
+            // === Horde Manager ===
+            renderHordeManager() {
+                const list = document.getElementById('settings-horde-list');
+                if (!list) return;
+                const keys = window.settingsStore.getHordeKeys();
+                const activeId = window.settingsStore.getActiveHordeKey().id;
+
+                list.innerHTML = keys.length === 0
+                    ? '<div class="text-xs text-slate-500 italic p-3 border border-dashed border-slate-700/50 rounded-xl text-center">No keys added. Add a key to generate images.</div>'
+                    : keys.map(k => `
+                    <div class="glass p-3 rounded-xl flex items-center justify-between gap-3 ${k.id === activeId ? 'border-l-2 border-violet-500 bg-violet-500/5' : ''}">
+                        <div class="flex-grow min-w-0">
+                            <div class="flex items-center gap-2">
+                                <div class="font-bold text-sm text-slate-200 truncate">${k.name}</div>
+                                ${k.id === activeId ? '<span class="text-[10px] bg-violet-500/20 text-violet-400 px-1.5 rounded uppercase font-bold">Active</span>' : ''}
+                            </div>
+                            <div class="text-[10px] font-mono text-slate-500 truncate mt-0.5 flex items-center gap-2 group">
+                                <span class="mask-key">${k.key.substring(0, 4)}••••••••</span>
+                                <span class="real-key hidden">${k.key}</span>
+                                <button onclick="this.parentElement.querySelector('.mask-key').classList.toggle('hidden'); this.parentElement.querySelector('.real-key').classList.toggle('hidden');" class="text-slate-600 hover:text-slate-400"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                             <button onclick="window.app.setActiveHordeKey('${k.id}')" title="Set Active" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center ${k.id === activeId ? 'text-violet-400' : 'text-slate-500 hover:text-white'}"><i class="fas fa-check"></i></button>
+                             <button onclick="window.app.testHordeKey('${k.key}')" title="Check Kudos" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center text-slate-500 hover:text-emerald-400"><i class="fas fa-heart"></i></button>
+                             <button onclick="window.app.openAddHordeKeyModal('${k.id}')" title="Edit" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-400"><i class="fas fa-pen"></i></button>
+                             <button onclick="window.app.deleteHordeKey('${k.id}')" title="Delete" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center text-slate-500 hover:text-red-400"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                `).join('');
+            },
+
+            openAddHordeKeyModal(id = null) {
+                let current = { name: '', key: '' };
+                if (id) {
+                    const keys = window.settingsStore.getHordeKeys();
+                    current = keys.find(k => k.id === id) || current;
                 }
-                const discord = window.settingsStore.getActiveDiscord();
-                if (discord) document.getElementById('setting-discord-url').value = discord.url;
+                const html = `
+                    <div class="space-y-4">
+                        <input type="hidden" id="key-id" value="${id || ''}">
+                        <input type="text" id="new-key-name" value="${current.name}" placeholder="Key Name (e.g. Main Account)" class="glass-input w-full">
+                        <input type="password" id="new-key-val" value="${current.key}" placeholder="Horde API Key (0000...)" class="glass-input w-full font-mono">
+                        <div class="flex justify-end gap-2">
+                             <button onclick="window.app.saveHordeKey()" class="glass-btn bg-violet-600 hover:bg-violet-500">Save Key</button>
+                        </div>
+                    </div>
+                `;
+                this.openModal(id ? 'Edit Horde Key' : 'Add Horde Key', html);
+            },
+
+            async saveHordeKey() {
+                const id = document.getElementById('key-id').value;
+                const name = document.getElementById('new-key-name').value;
+                const key = document.getElementById('new-key-val').value;
+                if (!name || !key) return window.notifications.show("Missing name or key", 'warning');
+
+                if (id) window.settingsStore.updateHordeKey(id, name, key);
+                else window.settingsStore.addHordeKey(name, key);
+
+                this.renderSettings();
+                this.closeModal();
+                window.notifications.show(id ? "Key Updated" : "Key Added");
+            },
+
+            setActiveHordeKey(id) { window.settingsStore.setActiveHordeKey(id); this.renderSettings(); },
+            deleteHordeKey(id) {
+                window.dialogs.confirm("Delete Key", "Remove this key?").then(ok => {
+                    if (ok) { window.settingsStore.removeHordeKey(id); this.renderSettings(); }
+                });
+            },
+
+            async testHordeKey(key) {
+                if (key === '0000000000') return window.notifications.show("Anonymous users always have 0 kudos.", 'info');
+                window.notifications.show("Checking key...", 'info');
+                try {
+                    const res = await fetch(`${window.settingsStore.getHordeUrl()}/find_user`, {
+                        headers: { 'apikey': key, 'Client-Agent': window.hordeClient.agent }
+                    });
+                    if (!res.ok) throw new Error("Invalid Key");
+                    const user = await res.json();
+                    window.notifications.show(`Valid: ${user.username} (${user.kudos} kudos)`, 'success');
+                } catch (e) {
+                    window.notifications.show("Invalid Key or Offline", 'error');
+                }
+            },
+
+            // === Horde URL Manager ===
+            renderHordeUrlManager() {
+                const list = document.getElementById('settings-horde-url-list');
+                if (!list) return;
+                const urls = window.settingsStore.getHordeUrls();
+                const activeId = window.settingsStore.getActiveHordeUrl().id;
+
+                list.innerHTML = urls.length === 0
+                    ? '<div class="text-xs text-slate-500 italic p-3 text-center">No URLs found (???)</div>'
+                    : urls.map(u => `
+                    <div class="glass p-3 rounded-xl flex items-center justify-between gap-3 ${u.id === activeId ? 'border-l-2 border-amber-500 bg-amber-500/5' : ''}">
+                         <div class="flex-grow min-w-0">
+                            <div class="flex items-center gap-2">
+                                <div class="font-bold text-sm text-slate-200 truncate">${u.name}</div>
+                                ${u.id === activeId ? '<span class="text-[10px] bg-amber-500/20 text-amber-400 px-1.5 rounded uppercase font-bold">Active</span>' : ''}
+                            </div>
+                            <div class="text-[10px] font-mono text-slate-500 truncate mt-0.5">${u.url}</div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                             <button onclick="window.app.setActiveHordeUrl('${u.id}')" title="Set Active" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center ${u.id === activeId ? 'text-amber-400' : 'text-slate-500 hover:text-white'}"><i class="fas fa-check"></i></button>
+                             <button onclick="window.app.openAddHordeUrlModal('${u.id}')" title="Edit" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-400"><i class="fas fa-pen"></i></button>
+                             ${urls.length > 1 ? `<button onclick="window.app.deleteHordeUrl('${u.id}')" title="Delete" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center text-slate-500 hover:text-red-400"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                    </div>`).join('');
+            },
+
+            openAddHordeUrlModal(id = null) {
+                let current = { name: '', url: '' };
+                if (id) {
+                    const urls = window.settingsStore.getHordeUrls();
+                    current = urls.find(u => u.id === id) || current;
+                }
+                const html = `
+                    <div class="space-y-4">
+                        <input type="hidden" id="url-id" value="${id || ''}">
+                        <input type="text" id="new-url-name" value="${current.name}" placeholder="Name (e.g. Official Cluster)" class="glass-input w-full">
+                        <input type="text" id="new-url-val" value="${current.url}" placeholder="https://aihorde.net/api/v2" class="glass-input w-full font-mono">
+                        <div class="flex justify-end gap-2">
+                             <button onclick="window.app.saveHordeUrl()" class="glass-btn bg-amber-600 hover:bg-amber-500">Save URL</button>
+                        </div>
+                    </div>
+                `;
+                this.openModal(id ? 'Edit API URL' : 'Add API URL', html);
+            },
+
+            saveHordeUrl() {
+                const id = document.getElementById('url-id').value;
+                const name = document.getElementById('new-url-name').value;
+                const url = document.getElementById('new-url-val').value;
+                if (!name || !url) return window.notifications.show("Missing name or url", 'warning');
+
+                if (id) window.settingsStore.updateHordeUrl(id, name, url);
+                else window.settingsStore.addHordeUrl(name, url);
+
+                this.renderSettings();
+                this.closeModal();
+            },
+            setActiveHordeUrl(id) { window.settingsStore.setActiveHordeUrl(id); this.renderSettings(); },
+            deleteHordeUrl(id) {
+                window.dialogs.confirm("Delete URL", "Remove this API URL?").then(ok => {
+                    if (ok) { window.settingsStore.removeHordeUrl(id); this.renderSettings(); }
+                });
+            },
+
+            // === GitHub Manager ===
+            renderGitHubManager() {
+                const list = document.getElementById('settings-github-list');
+                const profiles = window.settingsStore.getGitHubProfiles(); // Assuming implemented or existing
+                // Since I might not have implemented getGitHubProfiles fully in step 941 (it was there), let's check.
+                // It was there: getGitHubProfiles() { return this.data.github.profiles; }
+                const activeId = window.settingsStore.getActiveGitHub()?.id;
+
+                list.innerHTML = profiles.length === 0
+                    ? '<div class="text-xs text-slate-500 italic p-3 border border-dashed border-slate-700/50 rounded-xl text-center">No profiles added.</div>'
+                    : profiles.map(p => `
+                    <div class="glass p-3 rounded-xl flex items-center justify-between gap-3 ${p.id === activeId ? 'border-l-2 border-emerald-500 bg-emerald-500/5' : ''}">
+                        <div>
+                            <div class="font-bold text-sm text-slate-200">${p.name}</div>
+                            <div class="text-[10px] font-mono text-slate-500">${p.repo}</div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                             <button onclick="window.app.setActiveGitHub('${p.id}')" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center ${p.id === activeId ? 'text-emerald-400' : 'text-slate-500 hover:text-white'}"><i class="fas fa-check"></i></button>
+                             <button onclick="window.app.openAddGitHubModal('${p.id}')" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-400"><i class="fas fa-pen"></i></button>
+                             <button onclick="window.app.deleteGitHub('${p.id}')" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center text-slate-500 hover:text-red-400"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>`).join('');
+            },
+
+            openAddGitHubModal(id = null) {
+                let current = { name: '', token: '', repo: '' };
+                if (id) {
+                    const profiles = window.settingsStore.getGitHubProfiles();
+                    current = profiles.find(p => p.id === id) || current;
+                }
+                const html = `
+                    <div class="space-y-4">
+                        <input type="hidden" id="gh-id" value="${id || ''}">
+                        <input type="text" id="new-gh-name" value="${current.name}" placeholder="Profile Name" class="glass-input w-full">
+                        <input type="password" id="new-gh-token" value="${current.token}" placeholder="Personal Access Token (PAT)" class="glass-input w-full font-mono">
+                        <input type="text" id="new-gh-repo" value="${current.repo}" placeholder="Repo (user/repo)" class="glass-input w-full font-mono">
+                        <div class="flex justify-end gap-2">
+                             <button onclick="window.app.saveGitHub()" class="glass-btn bg-emerald-600 hover:bg-emerald-500">Save Profile</button>
+                        </div>
+                    </div>
+                `;
+                this.openModal(id ? 'Edit GitHub Profile' : 'Add GitHub Profile', html);
+            },
+
+            saveGitHub() {
+                const id = document.getElementById('gh-id').value;
+                const name = document.getElementById('new-gh-name').value;
+                const token = document.getElementById('new-gh-token').value;
+                const repo = document.getElementById('new-gh-repo').value;
+                if (!name || !token || !repo) return window.notifications.show("Missing fields", 'warning');
+
+                if (id) window.settingsStore.updateGitHubProfile(id, name, token, repo);
+                else window.settingsStore.addGitHubProfile(name, token, repo);
+
+                this.renderSettings();
+                this.closeModal();
+            },
+            setActiveGitHub(id) { window.settingsStore.setActiveGitHub(id); this.renderSettings(); },
+            deleteGitHub(id) {
+                window.dialogs.confirm("Delete Profile", "Remove this GitHub profile?").then(ok => {
+                    if (ok) { window.settingsStore.removeGitHubProfile(id); this.renderSettings(); }
+                });
+            },
+
+            // === Discord Manager ===
+            renderDiscordManager() {
+                const list = document.getElementById('settings-discord-list');
+                const webhooks = window.settingsStore.getDiscordWebhooks();
+                const activeId = window.settingsStore.getActiveDiscord()?.id;
+
+                list.innerHTML = webhooks.length === 0
+                    ? '<div class="text-xs text-slate-500 italic p-3 border border-dashed border-slate-700/50 rounded-xl text-center">No webhooks added.</div>'
+                    : webhooks.map(w => `
+                    <div class="glass p-3 rounded-xl flex items-center justify-between gap-3 ${w.id === activeId ? 'border-l-2 border-indigo-500 bg-indigo-500/5' : ''}">
+                        <div class="flex-grow min-w-0">
+                            <div class="flex items-center gap-2">
+                                <div class="font-bold text-sm text-slate-200">${w.name}</div>
+                                <div class="text-[10px] px-1.5 rounded bg-slate-800 text-slate-400 font-mono uppercase">${w.channelType || 'forum'}</div>
+                            </div>
+                            <div class="text-[10px] font-mono text-slate-500 truncate mt-0.5 max-w-[200px]">${w.url}</div>
+                        </div>
+                        <div class="flex items-center gap-1">
+                             <button onclick="window.app.setActiveDiscord('${w.id}')" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center ${w.id === activeId ? 'text-indigo-400' : 'text-slate-500 hover:text-white'}"><i class="fas fa-check"></i></button>
+                             <button onclick="window.app.openAddDiscordModal('${w.id}')" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-400"><i class="fas fa-pen"></i></button>
+                             <button onclick="window.app.deleteDiscord('${w.id}')" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center text-slate-500 hover:text-red-400"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>`).join('');
+            },
+
+            openAddDiscordModal(id = null) {
+                let current = { name: '', url: '', channelType: 'forum' };
+                if (id) {
+                    const webhooks = window.settingsStore.getDiscordWebhooks();
+                    current = webhooks.find(w => w.id === id) || current;
+                }
+                const html = `
+                    <div class="space-y-4">
+                        <input type="hidden" id="discord-id" value="${id || ''}">
+                        <input type="text" id="new-discord-name" value="${current.name}" placeholder="Webhook Name" class="glass-input w-full">
+                        <input type="password" id="new-discord-url" value="${current.url}" placeholder="Webhook URL" class="glass-input w-full font-mono">
+                        <div>
+                            <label class="text-xs font-bold text-slate-400 mb-1 block">Channel Type</label>
+                            <select id="new-discord-type" class="glass-input w-full bg-slate-900/50">
+                                <option value="forum" ${current.channelType === 'forum' ? 'selected' : ''}>Forum Channel (Smart Threads)</option>
+                                <option value="text" ${current.channelType === 'text' ? 'selected' : ''}>Text Channel (Standard)</option>
+                            </select>
+                        </div>
+                         <div class="flex justify-end gap-2">
+                             <button onclick="window.app.saveDiscord()" class="glass-btn bg-indigo-600 hover:bg-indigo-500">Save Webhook</button>
+                        </div>
+                    </div>
+                `;
+                this.openModal(id ? 'Edit Webhook' : 'Add Webhook', html);
+            },
+            saveDiscord() {
+                const id = document.getElementById('discord-id').value;
+                const name = document.getElementById('new-discord-name').value;
+                const url = document.getElementById('new-discord-url').value;
+                const type = document.getElementById('new-discord-type').value;
+
+                if (!name || !url) return window.notifications.show("Missing fields", 'warning');
+
+                if (id) window.settingsStore.updateDiscordWebhook(id, name, url, type);
+                else window.settingsStore.addDiscordWebhook(name, url, type);
+
+                this.renderSettings();
+                this.closeModal();
+            },
+            setActiveDiscord(id) { window.settingsStore.setActiveDiscord(id); this.renderSettings(); },
+            deleteDiscord(id) {
+                window.dialogs.confirm("Delete Webhook", "Remove this webhook?").then(ok => {
+                    if (ok) { window.settingsStore.removeDiscordWebhook(id); this.renderSettings(); }
+                });
             },
 
             async loadDynamicForm() {
@@ -1695,6 +2119,13 @@
                     const formValues = window.formEngine.getValues(document.getElementById('dynamic-form-container'));
                     const params = formValues.params;
                     const res = await window.hordeClient.generateImage(prompt, params, model);
+
+                    // Handle Dry Run (No Job ID)
+                    if (params.dry_run || params.dry_run === 'true') {
+                        window.notifications.show(`Dry Run Successful! Estimated Cost: ${res.kudos} kudos`, 'info');
+                        return;
+                    }
+
                     // Store BOTH public and private (user_only) params
                     const storedParams = { ...params, ...formValues.meta };
                     this.queue.addJob(res.id, prompt, storedParams, model);
@@ -1901,20 +2332,6 @@
                 const genBtn = document.getElementById('btn-generate');
                 if (genBtn) genBtn.addEventListener('click', () => this.handleGenerate());
 
-                const saveBtn = document.getElementById('btn-save-settings');
-                if (saveBtn) {
-                    saveBtn.addEventListener('click', () => {
-                        const key = document.getElementById('setting-horde-key').value;
-                        const token = document.getElementById('setting-gh-token').value;
-                        const repo = document.getElementById('setting-gh-repo').value;
-                        const discordUrl = document.getElementById('setting-discord-url').value;
-                        window.settingsStore.setHordeKey(key);
-                        if (token && repo) window.settingsStore.addGitHubProfile("Default", token, repo);
-                        if (discordUrl) window.settingsStore.addDiscordWebhook("Default", discordUrl);
-                        window.notifications.show("Settings Saved!", 'success');
-                        this.checkHordeConnection();
-                    });
-                }
                 const galleryBtn = document.querySelector('#view-gallery button i.fa-sync-alt');
                 if (galleryBtn) galleryBtn.parentElement.addEventListener('click', () => this.loadGallery());
 
