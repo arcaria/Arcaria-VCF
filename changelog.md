@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.0.4 (Settings Overhaul)
+
+### Improved
+
+- **Horde Manager Upgrade**: Added support for multiple API Keys.
+- **API URL Manager**: Users can now configure custom Horde endpoints.
+  - Added support for multiple Webhooks.
+  - **Smart Threading**: Automatically creates daily threads in Forum Channels.
+  - **Channel Types**: Explicit support for Text vs Forum channels.
+- **GitHub Integration**: Added support for multiple Profiles (PAT/Repo pairs).
+- **Edit Capability**: All settings (Keys, URLs, profiles) can now be edited in-place.
+- **Dry Run Fix**: Generating with `dry_run: true` now correctly reports cost estimates without creating broken job entries.
+- **UI Refresh**: Migrated Settings to a dedicated "Managers" architecture.
+
 ## [v0.0.3] - Released
 
 ### Fixed
