@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.0.7 (Gallery Overhaul)
+
+### Added
+
+- **Gallery Pagination**: Implemented optimized client-side pagination for gallery grids.
+- **Improved Loading State**: Visual spinner for better UX during GitHub API calls.
+- **Format Support**: Gallery now supports `.webp`, `.jpg`, and `.png`.
+- **Enhanced Interactions**:
+  - **Direct Open**: Opens full-resolution image in new tab.
+  - **Download Button**: Download image with original filename.
+
+### Fixed
+
+- **Private Repo Access**: Fixed broken images for Private Repositories using "Blob Fetching" strategy.
+- **v6 Regression**: Fixed `clearBtn` reference error.
+
 ## v0.0.6 (Fixes)
 
 ### Fixed
@@ -94,5 +110,6 @@ All notable changes to this project will be documented in this file.
   - **Notifications**: Custom non-blocking toast system.
   - **Dialogs**: Custom Promise-based modal dialogs replacing native alerts.
   - **Validation**: Smart inputs with character counting and Negative Prompt separation (`###`).
+
 
 
