@@ -336,8 +336,19 @@
                     </div>
                 </div>
 
-                <div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+                <div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
                     <!-- Gallery Items -->
+                </div>
+
+                <!-- Pagination -->
+                <div id="gallery-pagination" class="flex justify-center items-center gap-4 hidden">
+                    <button onclick="window.app.changeGalleryPage(-1)" id="gal-prev"
+                        class="glass-btn px-4 py-2 text-sm disabled:opacity-30 disabled:cursor-not-allowed"><i
+                            class="fas fa-chevron-left mr-2"></i> Prev</button>
+                    <span id="gal-page-info" class="text-xs text-slate-400 font-mono">Page 1</span>
+                    <button onclick="window.app.changeGalleryPage(1)" id="gal-next"
+                        class="glass-btn px-4 py-2 text-sm disabled:opacity-30 disabled:cursor-not-allowed">Next <i
+                            class="fas fa-chevron-right ml-2"></i></button>
                 </div>
             </div>
         </div>
@@ -634,7 +645,7 @@
 
     <!-- 2. Settings Store -->
     <script>
-        const APP_VERSION = '0.0.6';
+        const APP_VERSION = '0.0.7';
 
         const DEFAULTS = {
             horde: { keys: [], activeKeyId: null, apiUrl: 'https://aihorde.net/api/v2' },
@@ -1438,8 +1449,14 @@
                     const imgUrl = job.result.generations[0].img;
                     const res = await fetch(imgUrl);
                     const blob = await res.blob();
+
+                    // Detect Type
+                    let ext = 'png';
+                    if (blob.type === 'image/webp') ext = 'webp';
+                    if (blob.type === 'image/jpeg') ext = 'jpg';
+
                     const date = new Date().toISOString().split('T')[0];
-                    await window.storageClient.uploadImage(blob, `${job.id}.png`, date);
+                    await window.storageClient.uploadImage(blob, `${job.id}.${ext}`, date);
                     const meta = { prompt: job.prompt, params: job.params, horde_id: job.id, created: job.created, worker: job.result.generations[0].worker_name };
                     await window.storageClient.uploadMetadata(meta, `${job.id}.json`, date);
                     console.log(`Uploaded ${job.id} to GitHub`);
@@ -1875,6 +1892,9 @@
         window.app = {
             router: Router,
             queue: null,
+            galleryImages: [], // cache for current date
+            galleryPage: 0,
+            galleryObjectUrls: [], // Manage memory for blobs
 
             async init() {
                 console.log("Antigravity Horde SingleFile Initializing...");
@@ -1897,7 +1917,6 @@
                 // Populate General & Generation Tabs
                 const config = window.settingsStore.getConfig();
                 if (!config) return;
-
                 // General
                 const poll = document.getElementById('setting-poll-interval');
                 if (poll) poll.value = config.general.pollInterval;
@@ -1916,7 +1935,209 @@
                     const bl = document.getElementById('conf-blacklist');
                     if (bl) bl.value = config.generation.worker_blacklist || '';
                 }
+
             },
+
+            async loadGallery() {
+                const grid = document.getElementById('gallery-grid');
+                const dateSelect = document.getElementById('gallery-date-filter');
+                const pagination = document.getElementById('gallery-pagination');
+                if (!grid || !dateSelect) return;
+
+                const gh = window.settingsStore.getActiveGitHub();
+                if (!gh) {
+                    grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20">No GitHub Profile Configured</div>';
+                    pagination.classList.add('hidden');
+                    return;
+                }
+
+                // Show Loading
+                grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20 animate-pulse"><i class="fas fa-circle-notch fa-spin text-3xl mb-4 text-violet-500"></i><br>Connecting to GitHub...</div>';
+                pagination.classList.add('hidden');
+
+                const [owner, repo] = gh.repo.split('/');
+                const headers = { 'Authorization': `token ${gh.token}`, 'Accept': 'application/vnd.github+json' };
+
+                try {
+                    // 1. Load Dates (Folders) if not loaded or requested
+                    if (dateSelect.options.length <= 1) { // Only "All Dates" exists
+                        const rootRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/`, { headers });
+                        if (!rootRes.ok) throw new Error("Failed to load repo contents");
+                        const rootData = await rootRes.json();
+
+                        // Filter for Date Folders (YYYY-MM-DD)
+                        const dateFolders = rootData
+                            .filter(f => f.type === 'dir' && /^\d{4}-\d{2}-\d{2}$/.test(f.name))
+                            .sort((a, b) => b.name.localeCompare(a.name)); // Newest first
+
+                        dateSelect.innerHTML = '';
+                        dateFolders.forEach(f => {
+                            const opt = document.createElement('option');
+                            opt.value = f.name;
+                            opt.innerText = f.name;
+                            dateSelect.appendChild(opt);
+                        });
+
+                        if (dateFolders.length === 0) {
+                            grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20">No archives found.</div>';
+                            return;
+                        }
+                    }
+
+                    // 2. Load Images for Selected Date
+                    const selectedDate = dateSelect.value;
+                    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${selectedDate}`, { headers });
+                    if (!res.ok) throw new Error(`Failed to load folder ${selectedDate}`);
+                    const files = await res.json();
+
+                    // Filter images & Save to State
+                    // Filter images & Save to State
+                    this.galleryImages = files.filter(f => /\.(png|webp|jpg|jpeg)$/i.test(f.name)).sort((a, b) => b.name.localeCompare(a.name));
+                    // Actually, sorting UUIDs is random order. If we want newest, we rely on GitHub order or metadata. 
+                    // GitHub returns alphabetical. If files are UUIDs, order is random.
+                    // Ideally we'd fetch timestamps or metadata files, but that's slow (N requests).
+                    // For now, reverse alphabetical might not help.
+                    // Wait, if files are saved as `uuid.png`, and uuid is v4, it's random.
+                    // BUT, `QueueManager` saves `date = new Date().toISOString().split('T')[0]`.
+                    // It doesn't save time in filename.
+                    // We'll just display them as given.
+
+                    this.galleryPage = 0;
+                    this.renderGalleryPage();
+
+                } catch (e) {
+                    console.error("Gallery Load Error", e);
+                    grid.innerHTML = `<div class="col-span-full text-center text-red-400 py-20">Failed to load gallery:<br>${e.message}</div>`;
+                }
+            },
+
+            renderGalleryPage() {
+                const grid = document.getElementById('gallery-grid');
+                const pagination = document.getElementById('gallery-pagination');
+                const pageInfo = document.getElementById('gal-page-info');
+                const btnPrev = document.getElementById('gal-prev');
+                const btnNext = document.getElementById('gal-next');
+
+                // Cleanup previous blobs
+                this.cleanupGalleryUrls();
+
+                if (this.galleryImages.length === 0) {
+                    grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20">No images in this folder.</div>';
+                    pagination.classList.add('hidden');
+                    return;
+                }
+
+                const itemsPerPage = 20; // Hardcoded or config
+                const totalPages = Math.ceil(this.galleryImages.length / itemsPerPage);
+
+                // Clamp
+                if (this.galleryPage < 0) this.galleryPage = 0;
+                if (this.galleryPage >= totalPages) this.galleryPage = totalPages - 1;
+
+                const start = this.galleryPage * itemsPerPage;
+                const end = start + itemsPerPage;
+                const pageItems = this.galleryImages.slice(start, end);
+
+                // Render Grid with Placeholders
+                grid.innerHTML = pageItems.map(img => `
+                        <div class="glass p-2 rounded-xl group relative overflow-hidden transition-all hover:scale-[1.02]">
+                            <div class="aspect-square bg-slate-900 rounded-lg flex items-center justify-center relative overflow-hidden">
+                                <i class="fas fa-image text-slate-700 text-3xl placeholder-icon"></i>
+                                <img data-src="${img.url}" data-filename="${img.name}" class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 gallery-img" loading="lazy">
+                            </div>
+                            <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 pointer-events-none">
+                                <a href="#" target="_blank" class="p-2 bg-white/20 rounded-full hover:bg-white/40 text-white pointer-events-auto js-open-link" title="Open Image"><i class="fas fa-external-link-alt"></i></a>
+                                <button class="p-2 bg-white/20 rounded-full hover:bg-white/40 text-white pointer-events-auto js-download-btn" title="Download"><i class="fas fa-download"></i></button>
+                            </div>
+                            <div class="mt-2 flex justify-between items-center px-1">
+                                <div class="text-[10px] text-slate-500 font-mono truncate w-24">${img.name}</div>
+                            </div>
+                        </div>
+                    `).join('');
+
+                // Trigger Secure Loads
+                this.loadGalleryImagesSecurely();
+
+                // Update Pagination Controls
+                if (totalPages > 1) {
+                    pagination.classList.remove('hidden');
+                    pageInfo.innerText = `Page ${this.galleryPage + 1} of ${totalPages}`;
+                    btnPrev.disabled = this.galleryPage === 0;
+                    btnNext.disabled = this.galleryPage === totalPages - 1;
+                } else {
+                    pagination.classList.add('hidden');
+                }
+            },
+
+            cleanupGalleryUrls() {
+                if (this.galleryObjectUrls) {
+                    this.galleryObjectUrls.forEach(url => URL.revokeObjectURL(url));
+                }
+                this.galleryObjectUrls = [];
+            },
+
+            async loadGalleryImagesSecurely() {
+                const imgs = document.querySelectorAll('img.gallery-img');
+                const gh = window.settingsStore.getActiveGitHub();
+                if (!gh) return;
+
+                // Use API to fetch raw content (redirects to signed raw url)
+                const headers = {
+                    'Authorization': `token ${gh.token}`,
+                    'Accept': 'application/vnd.github.raw'
+                };
+
+                // Process sequentially or limited parallel
+                const batchSize = 5;
+                for (let i = 0; i < imgs.length; i += batchSize) {
+                    const batch = Array.from(imgs).slice(i, i + batchSize);
+                    await Promise.all(batch.map(async (img) => {
+                        const url = img.getAttribute('data-src');
+                        if (!url) return;
+
+                        try {
+                            const res = await fetch(url, { headers });
+                            if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
+                            const blob = await res.blob();
+                            const objUrl = URL.createObjectURL(blob);
+                            this.galleryObjectUrls.push(objUrl);
+
+                            img.src = objUrl;
+                            img.onload = () => {
+                                img.classList.remove('opacity-0');
+                                img.previousElementSibling?.remove(); // Remove icon
+
+                                // Wire up buttons
+                                const container = img.closest('.glass');
+                                const openLink = container.querySelector('.js-open-link');
+                                const dlBtn = container.querySelector('.js-download-btn');
+
+                                if (openLink) openLink.href = objUrl;
+                                if (dlBtn) dlBtn.onclick = () => window.app.downloadGalleryImage(objUrl, img.getAttribute('data-filename'));
+                            }
+                        } catch (e) {
+                            console.warn("Failed to load image securely", url, e);
+                            img.parentElement.innerHTML = '<div class="text-red-500 text-xs text-center p-2 flex flex-col items-center justify-center h-full"><i class="fas fa-exclamation-triangle mb-1"></i><span>Failed</span></div>';
+                        }
+                    }));
+                }
+            },
+
+            downloadGalleryImage(blobUrl, filename) {
+                const link = document.createElement('a');
+                link.href = blobUrl;
+                link.download = filename || 'image.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+
+            changeGalleryPage(delta) {
+                this.galleryPage += delta;
+                this.renderGalleryPage();
+            },
+
+
 
             // Settings Tabs
             switchSettingsTab(tabId) {
@@ -2799,7 +3020,6 @@
                         if (counter) counter.innerText = `${e.target.value.length} chars`;
                     });
                 }
-                if (clearBtn) clearBtn.addEventListener('click', () => { if (this.queue) this.queue.clearFinished(); });
             },
 
             openJobDetails(id) {
@@ -3047,5 +3267,3 @@
 </body>
 
 </html>
-
-
