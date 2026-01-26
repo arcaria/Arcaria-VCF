@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.0.6 (Fixes)
+
+### Fixed
+
+- **Discord Thread Persistence**: Logic updated to use Local Time instead of UTC for daily threads. This prevents thread duplication/mismatch when dates shift in different timezones. Also improved error logging for webhook responses.
+- **Webhook URL Hygiene**: Added automatic sanitization of Discord Webhook URLs. If a user pastes a URL containing an existing `thread_id` or `wait` parameter, it is now stripped before applying Smart Thread logic, preventing accidental renaming of old threads.
+
+### Improved
+
+- **Settings Overhaul**: Completely redesigned the Settings modal with a **Tabbed Interface** (General, Generation, Connections). Added **Manual Save Buttons** for configuration tabs to prevent accidental changes.
+- **Connection Monitoring**: The app now periodically checks the connection to the AI Horde (every 30s) and updates the status indicator and User Kudos automatically. Includes a new **Heartbeat Interval** setting.
+- **Auto-Update Check**: Added an automatic version checker that notifies users when a new version of the webapp is hosted/deployed.
+
 ## [v0.0.5] - Released - (Data Management & UI Polish)
 
 - **Data Management System**:
@@ -81,4 +94,5 @@ All notable changes to this project will be documented in this file.
   - **Notifications**: Custom non-blocking toast system.
   - **Dialogs**: Custom Promise-based modal dialogs replacing native alerts.
   - **Validation**: Smart inputs with character counting and Negative Prompt separation (`###`).
+
 
