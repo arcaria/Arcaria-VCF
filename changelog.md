@@ -2,7 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-## v0.0.4 (Settings Overhaul)
+## [v0.0.5] - Released - (Data Management & UI Polish)
+
+- **Data Management System**:
+  - **Export**: Full JSON backup of Settings, History, Presets, and Forms.
+  - **Fine-grained Control**: Checkboxes to select specific data categories to export.
+  - **Import**: Restore data from backup with safety warnings to prevent accidental overwrites.
+  - **Critical Styling**: The Data Management section uses a distinct red theme to indicate sensitive operations (API Keys).
+- **Settings UI**:
+  - **Accordions**: Settings sections are now collapsible `<details>` groups for a cleaner interface.
+  - **Validation**: Added confirmation dialogs for all destructive actions.
+
+## [v0.0.4] - Released - (Settings Overhaul)
 
 ### Improved
 
@@ -70,3 +81,4 @@ All notable changes to this project will be documented in this file.
   - **Notifications**: Custom non-blocking toast system.
   - **Dialogs**: Custom Promise-based modal dialogs replacing native alerts.
   - **Validation**: Smart inputs with character counting and Negative Prompt separation (`###`).
+

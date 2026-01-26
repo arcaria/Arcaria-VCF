@@ -352,59 +352,139 @@
                 <div class="space-y-10">
 
                     <!-- 1. Horde Keys -->
-                    <section class="space-y-4">
-                        <div class="flex justify-between items-end border-b border-white/5 pb-2">
-                            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">AI Horde Keys</h3>
-                            <button onclick="window.app.openAddHordeKeyModal()"
-                                class="text-xs text-violet-400 hover:text-white flex items-center gap-1"><i
-                                    class="fas fa-plus"></i> Add Key</button>
+                    <!-- 1. Horde Keys -->
+                    <details class="group glass rounded-xl overflow-hidden mb-4" open>
+                        <summary
+                            class="flex justify-between items-center p-4 cursor-pointer list-none bg-slate-800/20 hover:bg-slate-800/40 transition-colors">
+                            <h3
+                                class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                <i
+                                    class="fas fa-chevron-right text-xs text-slate-500 transition-transform group-open:rotate-90"></i>
+                                AI Horde Keys
+                            </h3>
+                            <button onclick="event.preventDefault(); window.app.openAddHordeKeyModal()"
+                                class="text-xs text-violet-400 hover:text-white flex items-center gap-1 glass-btn px-2 py-1"><i
+                                    class="fas fa-plus"></i> Add</button>
+                        </summary>
+                        <div class="p-4 border-t border-white/5 space-y-3">
+                            <div id="settings-horde-list" class="space-y-3"></div>
                         </div>
-                        <div id="settings-horde-list" class="space-y-3">
-                            <!-- Injected -->
-                        </div>
-                    </section>
+                    </details>
 
                     <!-- 1b. Horde API URL -->
-                    <section class="space-y-4">
-                        <div class="flex justify-between items-end border-b border-white/5 pb-2">
-                            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">AI Horde API URL
+                    <details class="group glass rounded-xl overflow-hidden mb-4">
+                        <summary
+                            class="flex justify-between items-center p-4 cursor-pointer list-none bg-slate-800/20 hover:bg-slate-800/40 transition-colors">
+                            <h3
+                                class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                <i
+                                    class="fas fa-chevron-right text-xs text-slate-500 transition-transform group-open:rotate-90"></i>
+                                AI Horde API URL
                             </h3>
-                            <button onclick="window.app.openAddHordeUrlModal()"
-                                class="text-xs text-violet-400 hover:text-white flex items-center gap-1"><i
-                                    class="fas fa-plus"></i> Add URL</button>
+                            <button onclick="event.preventDefault(); window.app.openAddHordeUrlModal()"
+                                class="text-xs text-amber-400 hover:text-white flex items-center gap-1 glass-btn px-2 py-1"><i
+                                    class="fas fa-plus"></i> Add</button>
+                        </summary>
+                        <div class="p-4 border-t border-white/5 space-y-3">
+                            <div id="settings-horde-url-list" class="space-y-3"></div>
                         </div>
-                        <div id="settings-horde-url-list" class="space-y-3">
-                            <!-- Injected -->
-                        </div>
-                    </section>
+                    </details>
 
                     <!-- 2. GitHub Repos -->
-                    <section class="space-y-4">
-                        <div class="flex justify-between items-end border-b border-white/5 pb-2">
-                            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">GitHub Galleries
+                    <details class="group glass rounded-xl overflow-hidden mb-4">
+                        <summary
+                            class="flex justify-between items-center p-4 cursor-pointer list-none bg-slate-800/20 hover:bg-slate-800/40 transition-colors">
+                            <h3
+                                class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                <i
+                                    class="fas fa-chevron-right text-xs text-slate-500 transition-transform group-open:rotate-90"></i>
+                                GitHub Galleries
                             </h3>
-                            <button onclick="window.app.openAddGitHubModal()"
-                                class="text-xs text-violet-400 hover:text-white flex items-center gap-1"><i
-                                    class="fas fa-plus"></i> Add Repo</button>
+                            <button onclick="event.preventDefault(); window.app.openAddGitHubModal()"
+                                class="text-xs text-emerald-400 hover:text-white flex items-center gap-1 glass-btn px-2 py-1"><i
+                                    class="fas fa-plus"></i> Add</button>
+                        </summary>
+                        <div class="p-4 border-t border-white/5 space-y-3">
+                            <div id="settings-github-list" class="space-y-3"></div>
                         </div>
-                        <div id="settings-github-list" class="space-y-3">
-                            <!-- Injected -->
-                        </div>
-                    </section>
+                    </details>
 
                     <!-- 3. Discord Webhooks -->
-                    <section class="space-y-4">
-                        <div class="flex justify-between items-end border-b border-white/5 pb-2">
-                            <h3 class="text-sm font-semibold text-slate-400 uppercase tracking-wider">Discord Webhooks
+                    <details class="group glass rounded-xl overflow-hidden mb-4">
+                        <summary
+                            class="flex justify-between items-center p-4 cursor-pointer list-none bg-slate-800/20 hover:bg-slate-800/40 transition-colors">
+                            <h3
+                                class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                <i
+                                    class="fas fa-chevron-right text-xs text-slate-500 transition-transform group-open:rotate-90"></i>
+                                Discord Webhooks
                             </h3>
-                            <button onclick="window.app.openAddDiscordModal()"
-                                class="text-xs text-violet-400 hover:text-white flex items-center gap-1"><i
-                                    class="fas fa-plus"></i> Add Webhook</button>
+                            <button onclick="event.preventDefault(); window.app.openAddDiscordModal()"
+                                class="text-xs text-indigo-400 hover:text-white flex items-center gap-1 glass-btn px-2 py-1"><i
+                                    class="fas fa-plus"></i> Add</button>
+                        </summary>
+                        <div class="p-4 border-t border-white/5 space-y-3">
+                            <div id="settings-discord-list" class="space-y-3"></div>
                         </div>
-                        <div id="settings-discord-list" class="space-y-3">
-                            <!-- Injected -->
+                    </details>
+
+                    <!-- 4. Data Management -->
+                    <details class="group glass rounded-xl overflow-hidden mb-4 border border-red-500/30 bg-red-900/10">
+                        <summary
+                            class="flex justify-between items-center p-4 cursor-pointer list-none bg-red-900/20 hover:bg-red-900/40 transition-colors">
+                            <h3
+                                class="text-sm font-semibold text-red-300 uppercase tracking-wider flex items-center gap-2">
+                                <i
+                                    class="fas fa-chevron-right text-xs text-red-500 transition-transform group-open:rotate-90"></i>
+                                Data Management (Critical)
+                            </h3>
+                        </summary>
+                        <div class="p-4 border-t border-red-500/10 space-y-4">
+                            <div class="text-xs text-slate-400 flex items-start gap-2">
+                                <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5"></i>
+                                <div>
+                                    Backup includes sensitive data (API Keys). Import actions are destructive
+                                    (Overwrite).
+                                </div>
+                            </div>
+
+                            <!-- Fine-grained Options -->
+                            <div class="space-y-2">
+                                <div class="text-xs font-bold text-slate-500 uppercase">Export Options</div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                                        <input type="checkbox" id="export-opt-settings" checked
+                                            class="accent-violet-500"> Settings (Keys/URLs/Profiles)
+                                    </label>
+                                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                                        <input type="checkbox" id="export-opt-history" checked
+                                            class="accent-violet-500"> History (Queue)
+                                    </label>
+                                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                                        <input type="checkbox" id="export-opt-presets" checked
+                                            class="accent-violet-500"> Presets & Styles
+                                    </label>
+                                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                                        <input type="checkbox" id="export-opt-forms" checked class="accent-violet-500">
+                                        Form Layouts
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="flex gap-2 border-t border-white/5 pt-4">
+                                <button onclick="window.dataManager.exportData()"
+                                    class="glass-btn bg-violet-600/20 hover:bg-violet-600 border-violet-500/30 text-violet-300 hover:text-white px-4 py-2 text-xs font-bold flex items-center gap-2 w-full justify-center">
+                                    <i class="fas fa-download"></i> Export Data
+                                </button>
+                                <button onclick="document.getElementById('import-file').click()"
+                                    class="glass-btn bg-red-600/20 hover:bg-red-600 border-red-500/30 text-red-300 hover:text-white px-4 py-2 text-xs font-bold flex items-center gap-2 w-full justify-center">
+                                    <i class="fas fa-upload"></i> Import Data
+                                </button>
+                                <input type="file" id="import-file" class="hidden" accept=".json"
+                                    onchange="window.dataManager.importData(this.files[0]); this.value = null;">
+                            </div>
                         </div>
-                    </section>
+                    </details>
 
                     <!-- Design Tool Link -->
                     <section class="pt-8 border-t border-white/10">
@@ -1558,6 +1638,87 @@
         window.presetManager = new PresetManager();
         window.notifications = new NotificationManager();
         window.dialogs = new DialogManager();
+
+        class DataManager {
+            constructor() {
+                this.prefix = 'AG_HORDE_';
+            }
+
+            async exportData() {
+                // Read Options
+                const opts = {
+                    settings: document.getElementById('export-opt-settings')?.checked ?? true,
+                    history: document.getElementById('export-opt-history')?.checked ?? true,
+                    presets: document.getElementById('export-opt-presets')?.checked ?? true,
+                    forms: document.getElementById('export-opt-forms')?.checked ?? true
+                };
+
+                // Filter logic
+                const filters = [];
+                if (opts.settings) filters.push('AG_HORDE_SETTINGS');
+                if (opts.history) filters.push('AG_HORDE_QUEUE');
+                if (opts.presets) { filters.push('AG_HORDE_PRESETS'); filters.push('AG_HORDE_STYLES'); }
+                if (opts.forms) filters.push('AG_HORDE_FORM_SCHEMA');
+
+                if (filters.length === 0) return window.notifications.show("No export options selected", 'warning');
+
+                if (!await window.dialogs.confirm("Export Data", "Download a JSON backup? \n\n⚠️ Handle the file with care if it contains API Keys.")) return;
+
+                const data = {
+                    version: 'v0.0.5',
+                    timestamp: Date.now(),
+                    store: {}
+                };
+
+                // Scan LocalStorage
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    // Match Prefix AND Filters
+                    if (key.startsWith(this.prefix)) {
+                        const isMatch = filters.some(f => key.includes(f) || key === f);
+                        if (isMatch || key === 'AG_HORDE_POLL_INTERVAL') { // Always include poll settings? Sure
+                            data.store[key] = localStorage.getItem(key);
+                        }
+                    }
+                }
+
+                const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `antigravity_backup_${new Date().toISOString().split('T')[0]}.json`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            }
+
+            async importData(file) {
+                try {
+                    const text = await file.text();
+                    const data = JSON.parse(text);
+
+                    // Validation
+                    if (!data.store || typeof data.store !== 'object') throw new Error("Invalid Backup Format");
+
+                    const count = Object.keys(data.store).length;
+                    const keys = Object.keys(data.store).join(', ');
+
+                    if (!await window.dialogs.confirm("Import Data", `Found ${count} keys to restore.\n\nKeys: ${keys}\n\n⚠️ This will OVERWRITE your current settings. Continue?`)) return;
+
+                    // Restore
+                    for (const [key, val] of Object.entries(data.store)) {
+                        localStorage.setItem(key, val);
+                    }
+
+                    window.notifications.show("Import Successful! Reloading...", 'success');
+                    setTimeout(() => location.reload(), 1500);
+
+                } catch (e) {
+                    window.notifications.show(`Import Failed: ${e.message}`, 'error');
+                }
+            }
+        }
+        window.dataManager = new DataManager();
     </script>
 
     <!-- 11. Main Application -->
@@ -1597,6 +1758,14 @@
                 this.renderHordeUrlManager();
                 this.renderGitHubManager();
                 this.renderDiscordManager();
+                this.renderDataManager();
+            },
+
+            // === Data Manager (Import/Export) ===
+            renderDataManager() {
+                const container = document.getElementById('settings-data-manager');
+                if (!container) return; // Need to add container to HTML first? No, I should find where list is and append? 
+                // Ah, currently HTML structure uses fixed sections. I need to INSERT the container into the HTML first.
             },
 
             // === Horde Manager ===
