@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.0.3] - Released
+
+### Fixed
+
+- **Resume Tracking**: Fixed logic where "Resume" button would immediately switch back to "Error" status if no workers were available. It now forces "Waiting" status.
+- **Queue Persistence**: Added QueueManager saving/loading from LocalStorage. The queue now survives page refreshes.
+- **Private Data Storage**: Fixed bug where "User Only" fields (like Notes, API Keys) were not being saved to Job History.
+
+### Improved
+
+- **Discord Integration**:
+  - Now sends a permanent Image Attachment (instead of temporary URL).
+  - Attaches full Job Metadata as JSON.
+  - Includes Rich Embed with generation parameters.
+  - Logic improved to auto-use Form Notes or Personal Notes as the caption, only prompting if both are empty.
+- **Queue UI**: Added live counters (badges) to the filter buttons (e.g. "Waiting 3").
+
 ## [v0.0.2] - Released
 
 ### Added
