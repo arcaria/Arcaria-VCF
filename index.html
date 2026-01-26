@@ -345,13 +345,146 @@
         <!-- View: Settings -->
         <div id="view-settings" class="view-section absolute inset-0 overflow-y-auto p-4 sm:p-8 hidden">
             <div class="max-w-4xl mx-auto glass p-8 rounded-3xl">
-                <h2 class="text-2xl font-bold mb-8 flex items-center gap-3">
-                    <i class="fas fa-sliders-h text-violet-400"></i> Local Configuration
-                </h2>
+                <!-- Settings Header / Tabs -->
+                <div class="flex items-center gap-4 mb-6 border-b border-white/10 pb-4">
+                    <h2
+                        class="text-2xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+                        Settings</h2>
+                    <div class="flex bg-slate-900/50 p-1 rounded-lg ml-auto">
+                        <button onclick="window.app.switchSettingsTab('general')" id="tab-btn-general"
+                            data-active="true"
+                            class="px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-violet-600 text-white shadow-lg">General</button>
+                        <button onclick="window.app.switchSettingsTab('generation')" id="tab-btn-generation"
+                            class="px-4 py-1.5 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white">Generation</button>
+                        <button onclick="window.app.switchSettingsTab('connections')" id="tab-btn-connections"
+                            class="px-4 py-1.5 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white">Connections</button>
+                    </div>
+                </div>
 
-                <div class="space-y-10">
+                <!-- Tab: General -->
+                <div id="tab-content-general" class="settings-tab-content space-y-6">
+                    <!-- Intervals -->
+                    <section class="glass p-4 rounded-xl space-y-4">
+                        <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                            <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wide">Application Intervals
+                            </h3>
+                            <button onclick="window.app.saveGeneralSettings()"
+                                class="glass-btn bg-violet-600 hover:bg-violet-500 text-xs px-3 py-1 font-bold shadow-lg"><i
+                                    class="fas fa-save mr-1"></i> Save Changes</button>
+                        </div>
 
-                    <!-- 1. Horde Keys -->
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 mb-1">Queue Poll Interval
+                                    (ms)</label>
+                                <input type="number" id="setting-poll-interval" min="1000" step="500"
+                                    class="glass-input w-full">
+                                <div class="text-[10px] text-slate-500 mt-1">How often to check job status (lower =
+                                    faster updates, more CPU).</div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 mb-1">Heartbeat Check (ms)</label>
+                                <input type="number" id="setting-heartbeat-interval" min="5000" step="1000"
+                                    class="glass-input w-full">
+                                <div class="text-[10px] text-slate-500 mt-1">How often to check Horde Status & Kudos.
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="glass p-4 rounded-xl border border-red-500/30 bg-red-900/10">
+                        <!-- Data Management (Moved here) -->
+                        <div class="flex justify-between items-center mb-4">
+                            <div class="text-sm font-bold text-red-300">Data Management</div>
+                            <div class="text-[10px] text-red-400 bg-red-900/20 px-2 py-0.5 rounded">Critical Zone</div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <!-- Fine-grained Options -->
+                            <div class="grid grid-cols-2 gap-2 bg-slate-900/30 p-3 rounded">
+                                <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                                    <input type="checkbox" id="export-opt-settings" checked class="accent-violet-500">
+                                    Settings
+                                </label>
+                                <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                                    <input type="checkbox" id="export-opt-history" checked class="accent-violet-500">
+                                    History
+                                </label>
+                                <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                                    <input type="checkbox" id="export-opt-presets" checked class="accent-violet-500">
+                                    Presets
+                                </label>
+                                <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                                    <input type="checkbox" id="export-opt-forms" checked class="accent-violet-500">
+                                    Forms
+                                </label>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="window.dataManager.exportData()"
+                                    class="glass-btn bg-violet-600/20 hover:bg-violet-600 border-violet-500/30 text-violet-300 hover:text-white px-4 py-2 text-xs font-bold flex items-center gap-2 flex-1 justify-center">
+                                    <i class="fas fa-download"></i> Export
+                                </button>
+                                <button onclick="document.getElementById('import-file').click()"
+                                    class="glass-btn bg-red-600/20 hover:bg-red-600 border-red-500/30 text-red-300 hover:text-white px-4 py-2 text-xs font-bold flex items-center gap-2 flex-1 justify-center">
+                                    <i class="fas fa-upload"></i> Import
+                                </button>
+                                <input type="file" id="import-file" class="hidden" accept=".json"
+                                    onchange="window.dataManager.importData(this.files[0]); this.value = null;">
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Tab: Generation -->
+                <div id="tab-content-generation" class="settings-tab-content space-y-6 hidden">
+                    <section class="glass p-4 rounded-xl space-y-4">
+                        <div class="flex justify-between items-center border-b border-white/5 pb-2">
+                            <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wide">Content Policies</h3>
+                            <button onclick="window.app.saveGenerationSettings()"
+                                class="glass-btn bg-violet-600 hover:bg-violet-500 text-xs px-3 py-1 font-bold shadow-lg"><i
+                                    class="fas fa-save mr-1"></i> Save Changes</button>
+                        </div>
+                        <div class="space-y-3">
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <span class="text-sm text-slate-200">NSFW Content</span>
+                                <input type="checkbox" id="conf-nsfw" class="accent-violet-500 w-5 h-5">
+                            </label>
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <span class="text-sm text-slate-200">Censor NSFW (Blur)</span>
+                                <input type="checkbox" id="conf-censor" class="accent-violet-500 w-5 h-5">
+                            </label>
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <div class="text-sm text-slate-200">Share Images (LAION)</div>
+                                <input type="checkbox" id="conf-shared" class="accent-violet-500 w-5 h-5">
+                            </label>
+                        </div>
+                    </section>
+
+                    <section class="glass p-4 rounded-xl space-y-4">
+                        <h3
+                            class="text-sm font-bold text-slate-300 uppercase tracking-wide border-b border-white/5 pb-2">
+                            Worker Selection</h3>
+                        <div class="space-y-3">
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <span class="text-sm text-slate-200">Trusted Workers Only</span>
+                                <input type="checkbox" id="conf-trusted" class="accent-violet-500 w-5 h-5">
+                            </label>
+                            <label class="flex items-center justify-between cursor-pointer">
+                                <span class="text-sm text-slate-200">Allow Slow Workers</span>
+                                <input type="checkbox" id="conf-slow" class="accent-violet-500 w-5 h-5">
+                            </label>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 mb-1">Worker Blacklist (IDs, comma
+                                    separated)</label>
+                                <textarea id="conf-blacklist"
+                                    class="glass-input w-full h-20 font-mono text-xs"></textarea>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Tab: Connections -->
+                <div id="tab-content-connections" class="settings-tab-content space-y-4 hidden">
                     <!-- 1. Horde Keys -->
                     <details class="group glass rounded-xl overflow-hidden mb-4" open>
                         <summary
@@ -427,74 +560,16 @@
                             <div id="settings-discord-list" class="space-y-3"></div>
                         </div>
                     </details>
-
-                    <!-- 4. Data Management -->
-                    <details class="group glass rounded-xl overflow-hidden mb-4 border border-red-500/30 bg-red-900/10">
-                        <summary
-                            class="flex justify-between items-center p-4 cursor-pointer list-none bg-red-900/20 hover:bg-red-900/40 transition-colors">
-                            <h3
-                                class="text-sm font-semibold text-red-300 uppercase tracking-wider flex items-center gap-2">
-                                <i
-                                    class="fas fa-chevron-right text-xs text-red-500 transition-transform group-open:rotate-90"></i>
-                                Data Management (Critical)
-                            </h3>
-                        </summary>
-                        <div class="p-4 border-t border-red-500/10 space-y-4">
-                            <div class="text-xs text-slate-400 flex items-start gap-2">
-                                <i class="fas fa-exclamation-triangle text-amber-500 mt-0.5"></i>
-                                <div>
-                                    Backup includes sensitive data (API Keys). Import actions are destructive
-                                    (Overwrite).
-                                </div>
-                            </div>
-
-                            <!-- Fine-grained Options -->
-                            <div class="space-y-2">
-                                <div class="text-xs font-bold text-slate-500 uppercase">Export Options</div>
-                                <div class="grid grid-cols-2 gap-2">
-                                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
-                                        <input type="checkbox" id="export-opt-settings" checked
-                                            class="accent-violet-500"> Settings (Keys/URLs/Profiles)
-                                    </label>
-                                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
-                                        <input type="checkbox" id="export-opt-history" checked
-                                            class="accent-violet-500"> History (Queue)
-                                    </label>
-                                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
-                                        <input type="checkbox" id="export-opt-presets" checked
-                                            class="accent-violet-500"> Presets & Styles
-                                    </label>
-                                    <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
-                                        <input type="checkbox" id="export-opt-forms" checked class="accent-violet-500">
-                                        Form Layouts
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="flex gap-2 border-t border-white/5 pt-4">
-                                <button onclick="window.dataManager.exportData()"
-                                    class="glass-btn bg-violet-600/20 hover:bg-violet-600 border-violet-500/30 text-violet-300 hover:text-white px-4 py-2 text-xs font-bold flex items-center gap-2 w-full justify-center">
-                                    <i class="fas fa-download"></i> Export Data
-                                </button>
-                                <button onclick="document.getElementById('import-file').click()"
-                                    class="glass-btn bg-red-600/20 hover:bg-red-600 border-red-500/30 text-red-300 hover:text-white px-4 py-2 text-xs font-bold flex items-center gap-2 w-full justify-center">
-                                    <i class="fas fa-upload"></i> Import Data
-                                </button>
-                                <input type="file" id="import-file" class="hidden" accept=".json"
-                                    onchange="window.dataManager.importData(this.files[0]); this.value = null;">
-                            </div>
-                        </div>
-                    </details>
-
-                    <!-- Design Tool Link -->
-                    <section class="pt-8 border-t border-white/10">
-                        <button onclick="app.router.navigate('designer')"
-                            class="w-full py-4 rounded-xl border-2 border-dashed border-slate-700 hover:border-violet-500 hover:bg-violet-500/10 transition-all text-slate-400 hover:text-violet-300 font-medium flex flex-col items-center gap-2">
-                            <i class="fas fa-edit text-xl"></i>
-                            <span>Open Dynamic Form Designer</span>
-                        </button>
-                    </section>
                 </div>
+
+                <!-- Design Tool Link (Keep it at bottom) -->
+                <section class="pt-8 border-t border-white/10 mt-auto">
+                    <button onclick="app.router.navigate('designer')"
+                        class="w-full py-4 rounded-xl border-2 border-dashed border-slate-700 hover:border-violet-500 hover:bg-violet-500/10 transition-all text-slate-400 hover:text-violet-300 font-medium flex flex-col items-center gap-2">
+                        <i class="fas fa-edit text-xl"></i>
+                        <span>Open Dynamic Form Designer</span>
+                    </button>
+                </section>
             </div>
         </div>
 
@@ -559,6 +634,8 @@
 
     <!-- 2. Settings Store -->
     <script>
+        const APP_VERSION = '0.0.6';
+
         const DEFAULTS = {
             horde: { keys: [], activeKeyId: null, apiUrl: 'https://aihorde.net/api/v2' },
             github: { profiles: [], activeProfileId: null },
@@ -599,10 +676,42 @@
                 if (!data.github.profiles) data.github.profiles = [];
                 if (!data.discord.webhooks) data.discord.webhooks = [];
 
+                // NEW: Config Structure (v0.0.7)
+                if (!data.config) data.config = {};
+
+                // General Defaults
+                if (!data.config.general) data.config.general = {};
+                if (!data.config.general.pollInterval) data.config.general.pollInterval = 3000;
+                if (!data.config.general.heartbeatInterval) data.config.general.heartbeatInterval = 30000; // 30s default
+
+                // Generation Defaults
+                if (!data.config.generation) data.config.generation = {};
+                if (data.config.generation.nsfw === undefined) data.config.generation.nsfw = true;
+                if (data.config.generation.censor_nsfw === undefined) data.config.generation.censor_nsfw = false;
+                if (data.config.generation.shared === undefined) data.config.generation.shared = true;
+                if (data.config.generation.trusted_workers === undefined) data.config.generation.trusted_workers = false;
+                if (data.config.generation.slow_workers === undefined) data.config.generation.slow_workers = true;
+                if (data.config.generation.worker_blacklist === undefined) data.config.generation.worker_blacklist = "";
+
                 return data;
             }
 
             save() { localStorage.setItem('AG_HORDE_SETTINGS', JSON.stringify(this.data)); }
+
+            // --- Config Accessors ---
+            getConfig() { return this.data.config; }
+            updateConfig(section, key, value) {
+                if (this.data.config[section]) {
+                    this.data.config[section][key] = value;
+                    this.save();
+                }
+            }
+            updateConfigSection(section, values) {
+                if (this.data.config[section]) {
+                    Object.assign(this.data.config[section], values);
+                    this.save();
+                }
+            }
 
             // --- Horde Keys ---
             getHordeKeys() { return this.data.horde.keys; }
@@ -702,10 +811,14 @@
 
             saveDiscordThread(webhookId, dateKey, threadId) {
                 const wh = this.data.discord.webhooks.find(w => w.id === webhookId);
-                if (!wh) return;
+                if (!wh) {
+                    console.error("saveDiscordThread: Webhook not found", webhookId);
+                    return;
+                }
                 if (!wh.threads) wh.threads = {};
                 wh.threads[dateKey] = threadId;
                 this.save();
+                console.log(`SettingsStore: Saved thread ${threadId} for date ${dateKey}`);
             }
         }
         window.settingsStore = new SettingsStore();
@@ -714,7 +827,7 @@
     <!-- 3. Horde Client -->
     <script>
         class HordeClient {
-            constructor() { this.agent = 'AntigravityHorde:v0.0.1:UnknownUser'; }
+            constructor() { this.agent = `AntigravityHorde:v${APP_VERSION}:UnknownUser`; }
 
             _getHeaders() {
                 return {
@@ -756,14 +869,18 @@
                     'proxied_account', 'disable_batching', 'webhook', 'blacklisted_workers'
                 ]);
 
-                // 1. Defaults
+                // 1. Defaults from Settings
+                const config = window.settingsStore.getConfig().generation;
                 const payload = {
                     prompt: prompt,
-                    models: [model], // Default to sidebar model
+                    models: [model],
                     params: { n: 1 },
-                    nsfw: true,
-                    censor_nsfw: false,
-                    shared: true
+                    nsfw: config.nsfw,
+                    censor_nsfw: config.censor_nsfw,
+                    shared: config.shared,
+                    trusted_workers: config.trusted_workers,
+                    slow_workers: config.slow_workers,
+                    worker_blacklist: config.worker_blacklist ? config.worker_blacklist.split(',').map(s => s.trim()).filter(Boolean) : undefined
                 };
 
                 // 2. Dynamic Merge
@@ -863,8 +980,21 @@
                 if (!job.result?.generations?.[0]) throw new Error("No image to send");
 
                 // --- Thread Logic ---
-                const dateKey = new Date().toISOString().split('T')[0];
-                let url = discord.url;
+                // Use Local Date to avoid UTC confusion
+                const now = new Date();
+                const dateKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+                // URL Hygiene: Strip existing thread params
+                let urlObj;
+                try {
+                    urlObj = new URL(discord.url);
+                    urlObj.searchParams.delete('thread_id');
+                    urlObj.searchParams.delete('wait');
+                } catch (e) {
+                    console.error("Invalid Webhook URL", discord.url);
+                    throw new Error("Invalid Webhook URL format");
+                }
+
                 let existingThreadId = null;
 
                 // Smart Threads only for 'forum' type (default)
@@ -873,12 +1003,15 @@
                     existingThreadId = discord.threads ? discord.threads[dateKey] : null;
 
                     if (existingThreadId) {
-                        url += `${url.includes('?') ? '&' : '?'}thread_id=${existingThreadId}`;
+                        urlObj.searchParams.append('thread_id', existingThreadId);
                     } else {
                         // Create new thread mode
-                        url += `${url.includes('?') ? '&' : '?'}wait=true`;
+                        urlObj.searchParams.append('wait', 'true');
                     }
                 }
+
+                const finalUrl = urlObj.toString();
+                console.log("[Discord] Sending to:", finalUrl, { dateKey, existingThreadId, channelType: discord.channelType });
 
                 // 1. Fetch Image Blob
                 const imgUrl = job.result.generations[0].img;
@@ -930,7 +1063,7 @@
                 formData.append('files[1]', metaBlob, `metadata_${job.id}.json`);
 
                 // 4. Send
-                const res = await fetch(url, {
+                const res = await fetch(finalUrl, {
                     method: 'POST',
                     body: formData // No headers (browser sets boundary)
                 });
@@ -941,13 +1074,14 @@
                 }
 
                 // 5. Save New Thread ID
-                if (!existingThreadId) {
+                if (!existingThreadId && discord.channelType !== 'text') {
                     try {
                         const msg = await res.json();
                         // Discord returns the message object. The channel_id of the message IS the Thread ID in a forum channel context (or simple thread).
                         if (msg.channel_id) {
                             window.settingsStore.saveDiscordThread(discord.id, dateKey, msg.channel_id);
-                            console.log(`Saved new Daily Thread ID: ${msg.channel_id} for ${dateKey}`);
+                        } else {
+                            console.warn("Discord Response missing channel_id", msg);
                         }
                     } catch (e) {
                         console.warn("Failed to parse Discord response for Thread ID", e);
@@ -1358,7 +1492,7 @@
 
             startPolling() {
                 if (this.intervalId) return;
-                const ms = parseInt(localStorage.getItem('AG_HORDE_POLL_INTERVAL') || '3000');
+                const ms = window.settingsStore.getConfig().general.pollInterval || 3000;
                 this.intervalId = setInterval(() => this.process(), ms);
             }
             stopPolling() { if (this.intervalId) { clearInterval(this.intervalId); this.intervalId = null; } }
@@ -1747,7 +1881,7 @@
                 this.queue = new QueueManager(this.renderQueue.bind(this));
                 this.renderSettings();
                 await this.loadDynamicForm();
-                this.checkHordeConnection();
+                this.startConnectionPolling();
                 this.loadModels();
                 this.router.navigate('generate');
                 this.setupListeners();
@@ -1759,6 +1893,93 @@
                 this.renderGitHubManager();
                 this.renderDiscordManager();
                 this.renderDataManager();
+
+                // Populate General & Generation Tabs
+                const config = window.settingsStore.getConfig();
+                if (!config) return;
+
+                // General
+                const poll = document.getElementById('setting-poll-interval');
+                if (poll) poll.value = config.general.pollInterval;
+                const hb = document.getElementById('setting-heartbeat-interval');
+                if (hb) hb.value = config.general.heartbeatInterval;
+
+                // Generation
+                if (config.generation) {
+                    const setChk = (id, val) => { const el = document.getElementById(id); if (el) el.checked = val; };
+                    setChk('conf-nsfw', config.generation.nsfw);
+                    setChk('conf-censor', config.generation.censor_nsfw);
+                    setChk('conf-shared', config.generation.shared);
+                    setChk('conf-trusted', config.generation.trusted_workers);
+                    setChk('conf-slow', config.generation.slow_workers);
+
+                    const bl = document.getElementById('conf-blacklist');
+                    if (bl) bl.value = config.generation.worker_blacklist || '';
+                }
+            },
+
+            // Settings Tabs
+            switchSettingsTab(tabId) {
+                // Buttons
+                ['general', 'generation', 'connections'].forEach(t => {
+                    const btn = document.getElementById(`tab-btn-${t}`);
+                    if (t === tabId) {
+                        btn.classList.remove('text-slate-400', 'hover:text-white');
+                        btn.classList.add('bg-violet-600', 'text-white', 'shadow-lg');
+                        btn.setAttribute('data-active', 'true');
+                    } else {
+                        btn.classList.add('text-slate-400', 'hover:text-white');
+                        btn.classList.remove('bg-violet-600', 'text-white', 'shadow-lg');
+                        btn.removeAttribute('data-active');
+                    }
+                });
+
+                // Content
+                document.querySelectorAll('.settings-tab-content').forEach(el => el.classList.add('hidden'));
+                document.getElementById(`tab-content-${tabId}`).classList.remove('hidden');
+            },
+
+            restartPolling() {
+                if (this.queue) {
+                    this.queue.stopPolling();
+                    this.queue.startPolling();
+                }
+            },
+
+            saveGeneralSettings() {
+                const poll = parseInt(document.getElementById('setting-poll-interval').value) || 3000;
+                const heartbeat = parseInt(document.getElementById('setting-heartbeat-interval').value) || 30000;
+
+                window.settingsStore.updateConfigSection('general', {
+                    pollInterval: poll,
+                    heartbeatInterval: heartbeat
+                });
+
+                // Restart Services
+                this.restartPolling();
+                this.startConnectionPolling();
+
+                window.notifications.show("General Settings Saved", "success");
+            },
+
+            saveGenerationSettings() {
+                const nsfw = document.getElementById('conf-nsfw').checked;
+                const censor = document.getElementById('conf-censor').checked;
+                const shared = document.getElementById('conf-shared').checked;
+                const trusted = document.getElementById('conf-trusted').checked;
+                const slow = document.getElementById('conf-slow').checked;
+                const blacklist = document.getElementById('conf-blacklist').value;
+
+                window.settingsStore.updateConfigSection('generation', {
+                    nsfw: nsfw,
+                    censor_nsfw: censor,
+                    shared: shared,
+                    trusted_workers: trusted,
+                    slow_workers: slow,
+                    worker_blacklist: blacklist
+                });
+
+                window.notifications.show("Generation Policies Saved", "success");
             },
 
             // === Data Manager (Import/Export) ===
@@ -2231,12 +2452,16 @@
                 this.closeModal();
             },
 
-            async checkHordeConnection() {
+            async updateConnectionStatus() {
                 const alive = await window.hordeClient.getHeartbeat();
                 const dot = document.getElementById('horde-status-dot');
                 const kudos = document.getElementById('user-kudos');
+
                 if (alive) {
-                    if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]";
+                    if (dot) {
+                        dot.className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]";
+                        dot.title = "Horde Online";
+                    }
                     const user = await window.hordeClient.getUserInfo();
                     if (user) {
                         if (kudos) kudos.innerText = `${user.username} (${user.kudos} kudos)`;
@@ -2244,9 +2469,69 @@
                         if (kudos) kudos.innerText = "Anonymous";
                     }
                 } else {
-                    if (dot) dot.className = "w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]";
+                    if (dot) {
+                        dot.className = "w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]";
+                        dot.title = "Horde Offline";
+                    }
                     if (kudos) kudos.innerText = "Offline";
-                    window.notifications.show("Horde API Offline", 'error');
+                }
+            },
+
+            startConnectionPolling() {
+                // Initial check
+                this.updateConnectionStatus();
+                this.checkAppVersion();
+
+                // Poll based on settings
+                const ms = window.settingsStore.getConfig().general.heartbeatInterval || 30000;
+                if (this.connInterval) clearInterval(this.connInterval);
+                this.connInterval = setInterval(() => {
+                    this.updateConnectionStatus();
+                    this.checkAppVersion();
+                }, ms);
+            },
+
+            async checkAppVersion() {
+                // 1. Dev Mode Check
+                const isLocal = window.location.protocol === 'file:' ||
+                    ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
+                if (isLocal) {
+                    // console.log("Dev Mode: Skipping Version Check");
+                    return;
+                }
+
+                try {
+                    // 2. Fetch Source with Cache Busting
+                    const res = await fetch(window.location.href, { cache: "no-store", headers: { 'Pragma': 'no-cache' } });
+                    if (!res.ok) return;
+                    const text = await res.text();
+
+                    // 3. Regex Match Version
+                    const match = text.match(/const\s+APP_VERSION\s*=\s*'([0-9.]+)';/);
+                    if (match && match[1]) {
+                        const remoteVersion = match[1];
+                        if (remoteVersion !== APP_VERSION) {
+                            // Notify (Persistent)
+                            if (!document.getElementById('update-notification')) {
+                                const notif = document.createElement('div');
+                                notif.id = 'update-notification';
+                                notif.className = "fixed bottom-4 right-4 bg-violet-600 text-white p-4 rounded-xl shadow-2xl flex items-center gap-4 z-50 animate-bounce";
+                                notif.innerHTML = `
+                                    <i class="fas fa-sparkles text-yellow-300 text-xl"></i>
+                                    <div>
+                                        <div class="font-bold">Update Available!</div>
+                                        <div class="text-xs opacity-75">v${remoteVersion} is live. Refresh to update.</div>
+                                    </div>
+                                    <button onclick="window.location.reload()" class="bg-white/20 hover:bg-white/30 px-3 py-1 rounded text-xs font-bold transition">Refresh</button>
+                                `;
+                                document.body.appendChild(notif);
+                                window.notifications.show(`New Version v${remoteVersion} Detected!`, 'info');
+                            }
+                        }
+                    }
+                } catch (e) {
+                    console.warn("Version Check Failed", e);
                 }
             },
 
