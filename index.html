@@ -645,7 +645,7 @@
 
     <!-- 2. Settings Store -->
     <script>
-        const APP_VERSION = '0.0.7';
+        const APP_VERSION = '0.0.8';
 
         const DEFAULTS = {
             horde: { keys: [], activeKeyId: null, apiUrl: 'https://aihorde.net/api/v2' },
@@ -2040,14 +2040,14 @@
 
                 // Render Grid with Placeholders
                 grid.innerHTML = pageItems.map(img => `
-                        <div class="glass p-2 rounded-xl group relative overflow-hidden transition-all hover:scale-[1.02]">
+                        <div class="glass p-2 rounded-xl group relative overflow-hidden transition-all hover:scale-[1.02] cursor-pointer" onclick="window.app.openGalleryImage('${img.name}')">
                             <div class="aspect-square bg-slate-900 rounded-lg flex items-center justify-center relative overflow-hidden">
                                 <i class="fas fa-image text-slate-700 text-3xl placeholder-icon"></i>
                                 <img data-src="${img.url}" data-filename="${img.name}" class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 gallery-img" loading="lazy">
                             </div>
                             <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 pointer-events-none">
-                                <a href="#" target="_blank" class="p-2 bg-white/20 rounded-full hover:bg-white/40 text-white pointer-events-auto js-open-link" title="Open Image"><i class="fas fa-external-link-alt"></i></a>
-                                <button class="p-2 bg-white/20 rounded-full hover:bg-white/40 text-white pointer-events-auto js-download-btn" title="Download"><i class="fas fa-download"></i></button>
+                                <a href="#" target="_blank" onclick="event.stopPropagation()" class="p-2 bg-white/20 rounded-full hover:bg-white/40 text-white pointer-events-auto js-open-link" title="Open Image"><i class="fas fa-external-link-alt"></i></a>
+                                <button onclick="event.stopPropagation()" class="p-2 bg-white/20 rounded-full hover:bg-white/40 text-white pointer-events-auto js-download-btn" title="Download"><i class="fas fa-download"></i></button>
                             </div>
                             <div class="mt-2 flex justify-between items-center px-1">
                                 <div class="text-[10px] text-slate-500 font-mono truncate w-24">${img.name}</div>
@@ -2130,6 +2130,150 @@
                 document.body.appendChild(link);
                 link.click();
                 document.body.removeChild(link);
+            },
+
+            async openGalleryImage(filename) {
+                const img = this.galleryImages.find(f => f.name === filename);
+                if (!img) return;
+
+                // Show Loading
+                this.openModal('Image Details', '<div class="text-center py-20 flex flex-col items-center gap-4"><i class="fas fa-circle-notch fa-spin text-4xl text-violet-500"></i><p class="text-slate-400">Fetching Metadata...</p></div>');
+
+                const gh = window.settingsStore.getActiveGitHub();
+                const headers = { 'Authorization': `token ${gh.token}`, 'Accept': 'application/vnd.github.raw' };
+
+                // 1. Fetch Metadata (JSON)
+                let meta = null;
+                try {
+                    const jsonName = filename.replace(/\.(png|webp|jpg|jpeg)$/i, '.json');
+                    // Check if JSON exists in file list first? Or just try to fetch.
+                    // We don't have the full file list with us in `galleryImages`? Actually we do (`files` in loadGallery).
+                    // But `galleryImages` is filtered. 
+                    // Let's just try to construct the URL. `img.url` is `.../contents/filename`. 
+                    // changing extension in URL might work if we use the API url structure.
+                    // But `img.url` is `api.github.com/...`.
+                    // We can just construct the raw URL if we want, or use the API url replacement.
+
+                    const jsonUrl = img.url.replace(filename, jsonName);
+                    const res = await fetch(jsonUrl, { headers });
+                    if (res.ok) meta = await res.json();
+                } catch (e) {
+                    console.warn("No metadata found for", filename);
+                }
+
+                // 2. Prepare Display Data
+                const prompt = meta?.prompt || 'No prompt available';
+                const model = meta?.params?.model || 'Unknown';
+                const created = meta?.created || 'Unknown Date';
+                const worker = meta?.worker || 'Unknown Worker';
+
+                // 3. Render Modal
+                const html = `
+                    <div class="h-[70vh] flex flex-col">
+                        <div class="flex-grow overflow-y-auto custom-scroll pr-2">
+                             <div class="rounded-xl overflow-hidden border border-white/10 shadow-2xl relative group mb-6 bg-black/50">
+                                 <!-- We use the same secure load trick for the large image, or reuse blob if we have it? -->
+                                 <!-- For now, showing a placeholder or trying to load it securely via js -->
+                                 <img id="modal-full-img" class="w-full h-auto max-h-[500px] object-contain mx-auto" src="" alt="Loading...">
+                             </div>
+
+                             <div class="space-y-4">
+                                <div class="flex gap-2">
+                                     <button onclick="window.app.reuseGallerySettings('${filename}')" class="glass-btn flex-1 text-xs bg-violet-600 hover:bg-violet-500 text-white" ${!meta ? 'disabled opacity-50' : ''}>
+                                        <i class="fas fa-magic mr-1.5"></i> Reuse Settings
+                                     </button>
+                                     <button onclick="window.app.downloadGalleryImageFromModal('${filename}')" class="glass-btn flex-1 text-xs bg-slate-700 hover:bg-slate-600">
+                                        <i class="fas fa-download mr-1.5"></i> Download
+                                     </button>
+                                </div>
+
+                                <div class="glass p-4 rounded-xl border-l-2 border-violet-500">
+                                    <div class="text-[10px] text-violet-400 uppercase tracking-wider mb-2">Prompt</div>
+                                    <div class="text-sm text-slate-200 leading-relaxed font-serif italic">"${prompt}"</div>
+                                </div>
+
+                                ${meta ? `
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="glass p-2 rounded">
+                                        <div class="text-[10px] text-slate-500 uppercase">Model</div>
+                                        <div class="text-xs text-slate-300 truncate">${model}</div>
+                                    </div>
+                                    <div class="glass p-2 rounded">
+                                        <div class="text-[10px] text-slate-500 uppercase">Worker</div>
+                                        <div class="text-xs text-slate-300 truncate">${worker}</div>
+                                    </div>
+                                     <div class="glass p-2 rounded">
+                                        <div class="text-[10px] text-slate-500 uppercase">Steps</div>
+                                        <div class="text-xs text-slate-300">${meta.params?.steps || '?'}</div>
+                                    </div>
+                                     <div class="glass p-2 rounded">
+                                        <div class="text-[10px] text-slate-500 uppercase">CFG Scale</div>
+                                        <div class="text-xs text-slate-300">${meta.params?.cfg_scale || '?'}</div>
+                                    </div>
+                                </div>
+                                ` : '<div class="text-center text-xs text-slate-500 italic py-4">No generation metadata available</div>'}
+                             </div>
+                        </div>
+                    </div>
+                `;
+
+                this.openModal(filename, html);
+
+                // Load Image Securely into Modal
+                try {
+                    const res = await fetch(img.url, { headers });
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    document.getElementById('modal-full-img').src = url;
+                    // Cache it specifically for this modal session? Browser handles blob url.
+                    // We might leak memory if we don't revoke. 
+                    // TODO: Clean up modal blobs?
+                } catch (e) {
+                    document.getElementById('modal-full-img').alt = "Failed to load image";
+                }
+
+                // Save meta to app scope temporarily for reuse
+                this.currentGalleryMeta = meta;
+            },
+
+            reuseGallerySettings(filename) {
+                if (!this.currentGalleryMeta || !this.currentGalleryMeta.params) return;
+                const meta = this.currentGalleryMeta;
+
+                document.getElementById('prompt-input').value = meta.prompt || '';
+                // Negative is mixed in plain prompt string usually or separate?
+                // In handleAutoUpload, `job.prompt` is saved. 
+                // `job.prompt` usually contains "Positive ### Negative".
+
+                if (meta.prompt.includes('###')) {
+                    document.getElementById('prompt-input').value = meta.prompt.split('###')[0].trim();
+                    document.getElementById('negative-prompt-input').value = meta.prompt.split('###')[1].trim();
+                }
+
+                if (meta.params.model) document.getElementById('model-select').value = meta.params.model;
+                window.formEngine.setValues(document.getElementById('dynamic-form-container'), { params: meta.params });
+
+                this.closeModal();
+                this.router.navigate('generate');
+                window.notifications.show("Settings restored from gallery!", 'success');
+            },
+
+            async downloadGalleryImageFromModal(filename) {
+                const img = this.galleryImages.find(f => f.name === filename);
+                if (!img) return;
+                // We need to fetch blob again or grab from img src if visible
+                const imgEl = document.getElementById('modal-full-img');
+                if (imgEl && imgEl.src.startsWith('blob:')) {
+                    this.downloadGalleryImage(imgEl.src, filename);
+                } else {
+                    // Fallback fetch
+                    const gh = window.settingsStore.getActiveGitHub();
+                    const headers = { 'Authorization': `token ${gh.token}`, 'Accept': 'application/vnd.github.raw' };
+                    const res = await fetch(img.url, { headers });
+                    const blob = await res.blob();
+                    const url = URL.createObjectURL(blob);
+                    this.downloadGalleryImage(url, filename);
+                }
             },
 
             changeGalleryPage(delta) {
