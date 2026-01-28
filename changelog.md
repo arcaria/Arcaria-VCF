@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.0.8 (Gallery Modal & Refinements)
+
+### Added
+
+- **Gallery Refinements**:
+  - **Tree-Based Loading**: Switched to GitHub Tree API for recursive scanning of all folders. Significantly faster for large repos and enables global sorting.
+  - **Date Navigator**: Replaced simple dropdown with a Date Navigator (< > buttons) and a Quick Select popover with search.
+  - **Stats**: Added global image usage counters (Total / In View).
+  - **Smart Date Persistence**: The gallery now remembers your date selection while navigating.
+- **Gallery Modal**:
+  - **Sidecar Metadata**: Automatically detects and loads `image.json` if it exists next to the image.
+  - **Detail View**: Clicking a card opens a modal with a large preview and full metadata (prompt, model, params).
+  - **Reuse Settings**: "Use This" button in the modal restores all generation parameters from the image metadata back to the form.
+  - **Download**: Direct download support from the modal.
+
+### Improved
+
+- **Pagination**: Moved pagination controls to the top of the gallery for easier access.
+- **Visuals**: Enhanced "Glass" styling for all gallery elements.
+
 ## v0.0.7 (Gallery Overhaul)
 
 ### Added
@@ -110,6 +130,7 @@ All notable changes to this project will be documented in this file.
   - **Notifications**: Custom non-blocking toast system.
   - **Dialogs**: Custom Promise-based modal dialogs replacing native alerts.
   - **Validation**: Smart inputs with character counting and Negative Prompt separation (`###`).
+
 
 
 
