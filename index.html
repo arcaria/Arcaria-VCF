@@ -323,32 +323,69 @@
         <!-- View: Gallery -->
         <div id="view-gallery" class="view-section absolute inset-0 overflow-y-auto p-4 sm:p-8 hidden">
             <div class="max-w-7xl mx-auto h-full flex flex-col">
-                <div class="flex justify-between items-center mb-6 shrink-0">
-                    <h2 class="text-2xl font-bold text-white">Gallery</h2>
-                    <div class="flex gap-2">
-                        <select id="gallery-date-filter"
-                            class="bg-slate-800 border border-slate-700 rounded-lg px-3 py-1 text-xs text-slate-300">
-                            <option>All Dates</option>
-                        </select>
-                        <button class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1 rounded-lg text-xs">
+                <div class="flex flex-wrap gap-4 justify-between items-center mb-6 shrink-0">
+                    <div class="flex items-baseline gap-4">
+                        <h2 class="text-2xl font-bold text-white">Gallery</h2>
+                        <div id="gallery-stats" class="text-xs font-mono text-slate-400 opacity-0 transition-opacity">
+                            <span class="text-violet-400 font-bold" id="gal-total-count">0</span> images total
+                            <span class="mx-2 text-slate-600">|</span>
+                            <span class="text-white" id="gal-date-count">0</span> in view
+                        </div>
+                    </div>
+
+                    <div class="flex gap-2 items-center relative">
+                        <!-- Date Navigator -->
+                        <div class="flex items-center glass p-1 rounded-lg gap-1">
+                            <button onclick="window.app.navigateDate(-1)"
+                                class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+
+                            <button onclick="window.app.toggleDatePopover()" id="current-date-display"
+                                class="px-3 h-8 flex items-center justify-center text-xs font-mono font-bold text-violet-300 hover:bg-white/5 rounded-md transition-colors min-w-[120px]">
+                                All Dates
+                            </button>
+
+                            <button onclick="window.app.navigateDate(1)"
+                                class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+
+                        <!-- Date Popover (Mini Modal) -->
+                        <div id="date-popover"
+                            class="absolute top-full right-0 mt-2 w-64 glass rounded-xl overflow-hidden shadow-2xl z-50 hidden flex flex-col max-h-[400px]">
+                            <div class="p-3 border-b border-white/5 bg-slate-900/50">
+                                <input type="text" id="date-search" placeholder="Search dates..."
+                                    class="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-2 py-1 text-xs text-white outline-none focus:border-violet-500/50">
+                            </div>
+                            <div id="date-list" class="overflow-y-auto custom-scroll p-2 space-y-1">
+                                <!-- Injected Options -->
+                            </div>
+                        </div>
+
+                        <button onclick="window.app.loadGallery()"
+                            class="glass-btn bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs"
+                            title="Refresh">
                             <i class="fas fa-sync-alt"></i>
                         </button>
                     </div>
                 </div>
 
-                <div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
-                    <!-- Gallery Items -->
-                </div>
-
-                <!-- Pagination -->
-                <div id="gallery-pagination" class="flex justify-center items-center gap-4 hidden">
+                <!-- Pagination (Moved to Top) -->
+                <div id="gallery-pagination"
+                    class="flex justify-between items-center mb-4 hidden bg-slate-900/30 p-2 rounded-lg border border-white/5">
                     <button onclick="window.app.changeGalleryPage(-1)" id="gal-prev"
-                        class="glass-btn px-4 py-2 text-sm disabled:opacity-30 disabled:cursor-not-allowed"><i
+                        class="glass-btn px-3 py-1.5 text-xs disabled:opacity-30 disabled:cursor-not-allowed hover:bg-violet-600"><i
                             class="fas fa-chevron-left mr-2"></i> Prev</button>
                     <span id="gal-page-info" class="text-xs text-slate-400 font-mono">Page 1</span>
                     <button onclick="window.app.changeGalleryPage(1)" id="gal-next"
-                        class="glass-btn px-4 py-2 text-sm disabled:opacity-30 disabled:cursor-not-allowed">Next <i
-                            class="fas fa-chevron-right ml-2"></i></button>
+                        class="glass-btn px-3 py-1.5 text-xs disabled:opacity-30 disabled:cursor-not-allowed hover:bg-violet-600">Next
+                        <i class="fas fa-chevron-right ml-2"></i></button>
+                </div>
+
+                <div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
+                    <!-- Gallery Items -->
                 </div>
             </div>
         </div>
@@ -645,7 +682,7 @@
 
     <!-- 2. Settings Store -->
     <script>
-        const APP_VERSION = '0.0.8';
+        const APP_VERSION = '0.0.9';
 
         const DEFAULTS = {
             horde: { keys: [], activeKeyId: null, apiUrl: 'https://aihorde.net/api/v2' },
@@ -1940,9 +1977,12 @@
 
             async loadGallery() {
                 const grid = document.getElementById('gallery-grid');
-                const dateSelect = document.getElementById('gallery-date-filter');
                 const pagination = document.getElementById('gallery-pagination');
-                if (!grid || !dateSelect) return;
+                const stats = document.getElementById('gallery-stats');
+                const dateList = document.getElementById('date-list');
+                const dateSearch = document.getElementById('date-search');
+
+                if (!grid) return;
 
                 const gh = window.settingsStore.getActiveGitHub();
                 if (!gh) {
@@ -1952,64 +1992,146 @@
                 }
 
                 // Show Loading
-                grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20 animate-pulse"><i class="fas fa-circle-notch fa-spin text-3xl mb-4 text-violet-500"></i><br>Connecting to GitHub...</div>';
+                grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20 animate-pulse"><i class="fas fa-circle-notch fa-spin text-3xl mb-4 text-violet-500"></i><br>Scanning Repository...</div>';
                 pagination.classList.add('hidden');
+                stats.classList.add('opacity-0');
 
                 const [owner, repo] = gh.repo.split('/');
                 const headers = { 'Authorization': `token ${gh.token}`, 'Accept': 'application/vnd.github+json' };
 
                 try {
-                    // 1. Load Dates (Folders) if not loaded or requested
-                    if (dateSelect.options.length <= 1) { // Only "All Dates" exists
-                        const rootRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/`, { headers });
-                        if (!rootRes.ok) throw new Error("Failed to load repo contents");
-                        const rootData = await rootRes.json();
+                    // 1. Fetch Tree Recursively (efficiently get all files)
+                    // unique cache buster not needed if we want newest? HEAD usually fresh.
+                    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`, { headers });
+                    if (!res.ok) throw new Error("Failed to scan repository contents");
 
-                        // Filter for Date Folders (YYYY-MM-DD)
-                        const dateFolders = rootData
-                            .filter(f => f.type === 'dir' && /^\d{4}-\d{2}-\d{2}$/.test(f.name))
-                            .sort((a, b) => b.name.localeCompare(a.name)); // Newest first
+                    const data = await res.json();
+                    if (data.truncated) console.warn("Gallery truncated: Repository too large.");
 
-                        dateSelect.innerHTML = '';
-                        dateFolders.forEach(f => {
-                            const opt = document.createElement('option');
-                            opt.value = f.name;
-                            opt.innerText = f.name;
-                            dateSelect.appendChild(opt);
+                    // 2. Process Files
+                    // Store strict source of truth.
+                    this.galleryAllFiles = data.tree
+                        .filter(f => f.type === 'blob' && /\.(png|webp|jpg|jpeg)$/i.test(f.path))
+                        .map(f => ({
+                            path: f.path, // '2023-10-27/img.png'
+                            name: f.path.split('/').pop(), // 'img.png'
+                            folder: f.path.split('/')[0], // '2023-10-27'
+                            // Construct content API URL for secure fetching
+                            url: `https://api.github.com/repos/${owner}/${repo}/contents/${f.path}`
+                        }));
+
+                    // 3. Populate Date Selector
+                    const dateCounts = {};
+                    this.galleryAllFiles.forEach(f => {
+                        if (/^\d{4}-\d{2}-\d{2}$/.test(f.folder)) {
+                            dateCounts[f.folder] = (dateCounts[f.folder] || 0) + 1;
+                        }
+                    });
+
+                    const sortedDates = Object.keys(dateCounts).sort((a, b) => b.localeCompare(a));
+
+                    this.availableDates = sortedDates;
+
+                    const renderDateList = (filterText = '') => {
+                        const ft = filterText.toLowerCase();
+                        let listHtml = '';
+                        this.availableDates.forEach(d => {
+                            if (ft && !d.includes(ft)) return;
+                            listHtml += `<button onclick="window.app.selectDate('${d}')" class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors flex justify-between group">
+                                <span>${d}</span>
+                                <span class="opacity-50 group-hover:opacity-100">${dateCounts[d]}</span>
+                            </button>`;
                         });
 
-                        if (dateFolders.length === 0) {
-                            grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20">No archives found.</div>';
-                            return;
+                        if (dateList) {
+                            dateList.innerHTML = `<button onclick="window.app.selectDate(null)" class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors flex justify-between group border-b border-white/5 mb-1">
+                                <span>All Dates</span>
+                                <span class="opacity-50 group-hover:opacity-100">${this.galleryAllFiles.length}</span>
+                            </button>` + listHtml;
                         }
+                    };
+
+                    renderDateList();
+                    if (dateSearch) dateSearch.oninput = (e) => renderDateList(e.target.value);
+
+                    // 4. Update Stats
+                    document.getElementById('gal-total-count').innerText = this.galleryAllFiles.length;
+                    stats.classList.remove('opacity-0');
+
+                    // 5. Initial Render
+                    if (this.currentGalleryDate && !this.availableDates.includes(this.currentGalleryDate)) {
+                        this.currentGalleryDate = null;
                     }
-
-                    // 2. Load Images for Selected Date
-                    const selectedDate = dateSelect.value;
-                    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${selectedDate}`, { headers });
-                    if (!res.ok) throw new Error(`Failed to load folder ${selectedDate}`);
-                    const files = await res.json();
-
-                    // Filter images & Save to State
-                    // Filter images & Save to State
-                    this.galleryImages = files.filter(f => /\.(png|webp|jpg|jpeg)$/i.test(f.name)).sort((a, b) => b.name.localeCompare(a.name));
-                    // Actually, sorting UUIDs is random order. If we want newest, we rely on GitHub order or metadata. 
-                    // GitHub returns alphabetical. If files are UUIDs, order is random.
-                    // Ideally we'd fetch timestamps or metadata files, but that's slow (N requests).
-                    // For now, reverse alphabetical might not help.
-                    // Wait, if files are saved as `uuid.png`, and uuid is v4, it's random.
-                    // BUT, `QueueManager` saves `date = new Date().toISOString().split('T')[0]`.
-                    // It doesn't save time in filename.
-                    // We'll just display them as given.
-
-                    this.galleryPage = 0;
-                    this.renderGalleryPage();
+                    this.selectDate(this.currentGalleryDate || null);
 
                 } catch (e) {
                     console.error("Gallery Load Error", e);
                     grid.innerHTML = `<div class="col-span-full text-center text-red-400 py-20">Failed to load gallery:<br>${e.message}</div>`;
                 }
             },
+
+            toggleDatePopover() {
+                const p = document.getElementById('date-popover');
+                if (p) {
+                    p.classList.toggle('hidden');
+                    if (!p.classList.contains('hidden')) {
+                        document.getElementById('date-search')?.focus();
+                    }
+                }
+            },
+
+            selectDate(date) {
+                this.currentGalleryDate = date; // null = All
+                const display = document.getElementById('current-date-display');
+                const popover = document.getElementById('date-popover');
+
+                if (display) display.innerText = date || "All Dates";
+                if (popover) popover.classList.add('hidden');
+
+                this.filterGallery();
+            },
+
+            navigateDate(dir) {
+                if (!this.availableDates || this.availableDates.length === 0) return;
+
+                let idx = -1;
+                if (this.currentGalleryDate) {
+                    idx = this.availableDates.indexOf(this.currentGalleryDate);
+                }
+
+                let newIdx;
+                if (idx === -1) {
+                    newIdx = 0;
+                } else {
+                    newIdx = idx - dir;
+                }
+
+                if (newIdx < 0) newIdx = 0;
+                if (newIdx >= this.availableDates.length) newIdx = this.availableDates.length - 1;
+
+                this.selectDate(this.availableDates[newIdx]);
+            },
+
+            filterGallery() {
+                if (!this.galleryAllFiles) return;
+
+                if (this.currentGalleryDate) {
+                    this.galleryImages = this.galleryAllFiles.filter(f => f.folder === this.currentGalleryDate);
+                } else {
+                    this.galleryImages = this.galleryAllFiles;
+                }
+
+                // Sort Newest First (Descending Path effectively sorts by date then name)
+                this.galleryImages.sort((a, b) => b.path.localeCompare(a.path));
+
+                // Update View Counter
+                const countEl = document.getElementById('gal-date-count');
+                if (countEl) countEl.innerText = this.galleryImages.length;
+
+                this.galleryPage = 0;
+                this.renderGalleryPage();
+            },
+
 
             renderGalleryPage() {
                 const grid = document.getElementById('gallery-grid');
@@ -2040,7 +2162,7 @@
 
                 // Render Grid with Placeholders
                 grid.innerHTML = pageItems.map(img => `
-                        <div class="glass p-2 rounded-xl group relative overflow-hidden transition-all hover:scale-[1.02] cursor-pointer" onclick="window.app.openGalleryImage('${img.name}')">
+                        <div class="glass p-2 rounded-xl group relative overflow-hidden transition-all hover:scale-[1.02] cursor-pointer" onclick="window.app.openGalleryImage('${img.path}')">
                             <div class="aspect-square bg-slate-900 rounded-lg flex items-center justify-center relative overflow-hidden">
                                 <i class="fas fa-image text-slate-700 text-3xl placeholder-icon"></i>
                                 <img data-src="${img.url}" data-filename="${img.name}" class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 gallery-img" loading="lazy">
@@ -2132,33 +2254,32 @@
                 document.body.removeChild(link);
             },
 
-            async openGalleryImage(filename) {
-                const img = this.galleryImages.find(f => f.name === filename);
+            async openGalleryImage(path) {
+                // Find image in global list (safe against filter changes)
+                const img = this.galleryAllFiles?.find(f => f.path === path);
                 if (!img) return;
+
+                // Filename for display and reuse (basename) 
+                const filename = img.name;
 
                 // Show Loading
                 this.openModal('Image Details', '<div class="text-center py-20 flex flex-col items-center gap-4"><i class="fas fa-circle-notch fa-spin text-4xl text-violet-500"></i><p class="text-slate-400">Fetching Metadata...</p></div>');
 
                 const gh = window.settingsStore.getActiveGitHub();
+                const [owner, repo] = gh.repo.split('/');
                 const headers = { 'Authorization': `token ${gh.token}`, 'Accept': 'application/vnd.github.raw' };
 
                 // 1. Fetch Metadata (JSON)
                 let meta = null;
                 try {
-                    const jsonName = filename.replace(/\.(png|webp|jpg|jpeg)$/i, '.json');
-                    // Check if JSON exists in file list first? Or just try to fetch.
-                    // We don't have the full file list with us in `galleryImages`? Actually we do (`files` in loadGallery).
-                    // But `galleryImages` is filtered. 
-                    // Let's just try to construct the URL. `img.url` is `.../contents/filename`. 
-                    // changing extension in URL might work if we use the API url structure.
-                    // But `img.url` is `api.github.com/...`.
-                    // We can just construct the raw URL if we want, or use the API url replacement.
+                    // Construct JSON path: "folder/img.png" -> "folder/img.json"
+                    const jsonPath = path.replace(/\.(png|webp|jpg|jpeg)$/i, '.json');
+                    const jsonUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${jsonPath}`;
 
-                    const jsonUrl = img.url.replace(filename, jsonName);
                     const res = await fetch(jsonUrl, { headers });
                     if (res.ok) meta = await res.json();
                 } catch (e) {
-                    console.warn("No metadata found for", filename);
+                    console.warn("No metadata found for", path);
                 }
 
                 // 2. Prepare Display Data
