@@ -2,6 +2,30 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.0.9 (Wildcards & UI Polish)
+
+### Added
+
+- **Wildcard System**:
+  - **Manager**: Full CRUD interface for creating and managing wildcard lists (e.g., `__colors__`).
+  - **Click-Outside**: Picker and Modals now support click-outside-to-close for faster workflows.
+  - **Recursion**: Parser now supports nested wildcards (e.g., a wildcard value that contains another wildcard).
+  - **Prefix/Suffix**: Checkboxes to auto-wrap wildcard values (e.g., `(value)` or `value,`).
+  - **Quick Insert**: Dropdown menu in the Prompt area to quickly insert available wildcards.
+- **UI Improvements**:
+  - **Split-Pane Managers**: Preset and Style managers now use a consistent split-pane layout (List on left, Editor on right).
+  - **In-Modal Editing**: Presets can now be edited directly within the Manager using the dynamic FormEngine.
+  - **Scroll Fixes**: Fixed double scrollbars in all managers; content now scrolls internally while header/footer stay fixed.
+
+### Removed
+
+- **Redundant Buttons**: Removed "Save Current Settings" from main sidebar (use "Copy Current" in Preset Manager) and "Manage" from Wildcard dropdown.
+
+### Improved
+
+- **Visuals**: Updated Wildcard "Quick Apply" icon to a terminal style (`>_`).
+- **Performance**: Optimized list rendering for large wildcard collections.
+
 ## v0.0.8 (Gallery Modal & Refinements)
 
 ### Added
@@ -130,6 +154,7 @@ All notable changes to this project will be documented in this file.
   - **Notifications**: Custom non-blocking toast system.
   - **Dialogs**: Custom Promise-based modal dialogs replacing native alerts.
   - **Validation**: Smart inputs with character counting and Negative Prompt separation (`###`).
+
 
 
 
