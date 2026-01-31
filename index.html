@@ -323,91 +323,253 @@
         <!-- View: Pending -->
         <div id="view-pending" class="view-section absolute inset-0 p-4 sm:p-8 hidden flex flex-col h-full">
             <div class="max-w-5xl mx-auto w-full h-full flex flex-col">
-                <div class="flex justify-between items-end mb-6 shrink-0">
-                    <div class="flex items-center gap-4">
-                        <h2 class="text-2xl font-bold text-white">Queue</h2>
-                        <div class="bg-slate-900/50 p-1 rounded-lg flex gap-1">
+                <div
+                    class="glass p-3 rounded-2xl mb-6 flex flex-wrap gap-4 justify-between items-center border border-white/10 shadow-lg relative z-50">
+                    <div class="flex items-center gap-4 px-2">
+                        <h2 class="text-xl font-bold text-white leading-tight">Queue</h2>
+                        <div class="bg-slate-900/50 p-1 rounded-lg flex gap-1 border border-white/5">
                             <button onclick="window.app.setQueueFilter('all')" id="qf-all"
-                                class="text-[10px] px-2 py-1 rounded bg-slate-700 text-white transition-colors">All
+                                class="text-[10px] px-2 py-1 rounded bg-slate-700 text-white transition-colors font-bold">All
                                 <span id="count-all" class="opacity-60 ml-1">0</span></button>
                             <button onclick="window.app.setQueueFilter('waiting')" id="qf-waiting"
-                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Waiting
+                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors font-bold">Waiting
                                 <span id="count-waiting" class="opacity-60 ml-1">0</span></button>
                             <button onclick="window.app.setQueueFilter('processing')" id="qf-processing"
-                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Processing
+                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors font-bold">Processing
                                 <span id="count-processing" class="opacity-60 ml-1">0</span></button>
                             <button onclick="window.app.setQueueFilter('done')" id="qf-done"
-                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Finished
+                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors font-bold">Finished
                                 <span id="count-done" class="opacity-60 ml-1">0</span></button>
                             <button onclick="window.app.setQueueFilter('error')" id="qf-error"
-                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors">Error
+                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors font-bold">Error
                                 <span id="count-error" class="opacity-60 ml-1">0</span></button>
                         </div>
                     </div>
-                    <div class="flex gap-2">
-                        <button onclick="window.app.openQueueSettings()"
-                            class="glass-btn text-xs px-2 py-1 text-slate-400 hover:text-white"><i
-                                class="fas fa-cog"></i></button>
-                        <button class="text-xs text-slate-400 hover:text-white transition-colors"
-                            onclick="if(window.app.queue) window.app.queue.clearFinished()">Clear Finished</button>
+                    <div
+                        class="flex gap-2 items-center bg-slate-900/50 p-1.5 rounded-xl border border-white/5 shadow-inner">
+
+                        <!-- Sort Dropdown -->
+                        <div class="relative">
+                            <button onclick="window.app.toggleDropdown('queue-sort-dropdown', event)"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                title="Sort Order">
+                                <i class="fas fa-sort-amount-down"></i>
+                            </button>
+                            <div id="queue-sort-dropdown"
+                                class="absolute top-full right-0 mt-1 w-40 bg-slate-950 rounded-xl overflow-hidden shadow-2xl z-50 hidden border border-white/10 shadow-black/50">
+                                <button onclick="window.app.setQueueSort('newest')"
+                                    class="w-full text-left px-4 py-2 text-xs hover:bg-white/10 text-slate-300 hover:text-white flex justify-between group">
+                                    <span>Newest</span>
+                                    <i class="fas fa-check text-violet-400 opacity-0 group-[[data-active=true]]:opacity-100"
+                                        id="q-sort-check-newest"></i>
+                                </button>
+                                <button onclick="window.app.setQueueSort('oldest')"
+                                    class="w-full text-left px-4 py-2 text-xs hover:bg-white/10 text-slate-300 hover:text-white flex justify-between group">
+                                    <span>Oldest</span>
+                                    <i class="fas fa-check text-violet-400 opacity-0 group-[[data-active=true]]:opacity-100"
+                                        id="q-sort-check-oldest"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Clear Dropdown -->
+                        <div class="relative">
+                            <button onclick="window.app.toggleDropdown('queue-clear-dropdown', event)"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                title="Clear Queue">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                            <div id="queue-clear-dropdown"
+                                class="absolute top-full right-0 mt-1 w-40 bg-slate-950 rounded-xl overflow-hidden shadow-2xl z-50 hidden border border-white/10 shadow-black/50">
+                                <button
+                                    onclick="if(window.app.queue) { window.app.queue.clearQueue('done'); window.app.toggleDropdown('queue-clear-dropdown'); }"
+                                    class="w-full text-left px-4 py-2 text-xs hover:bg-white/10 text-slate-300 hover:text-white transition-colors">
+                                    Clear Finished
+                                </button>
+                                <button
+                                    onclick="if(window.app.queue) { window.app.queue.clearQueue('error'); window.app.toggleDropdown('queue-clear-dropdown'); }"
+                                    class="w-full text-left px-4 py-2 text-xs hover:bg-white/10 text-slate-300 hover:text-white transition-colors">
+                                    Clear Errors
+                                </button>
+                                <div class="h-px bg-white/10 my-1"></div>
+                                <button
+                                    onclick="if(window.app.queue) { window.app.queue.clearQueue('pending'); window.app.toggleDropdown('queue-clear-dropdown'); }"
+                                    class="w-full text-left px-4 py-2 text-xs hover:bg-white/10 text-amber-400 hover:text-amber-200 transition-colors">
+                                    Cancel Pending
+                                </button>
+                                <button
+                                    onclick="if(window.app.queue) { window.app.queue.clearQueue('all'); window.app.toggleDropdown('queue-clear-dropdown'); }"
+                                    class="w-full text-left px-4 py-2 text-xs hover:bg-red-500/20 text-red-400 hover:text-red-200 transition-colors font-bold">
+                                    Clear All
+                                </button>
+                            </div>
+                        </div>
+                        <!-- Pagination (Compact) -->
+                        <div id="queue-pagination" class="flex items-center gap-1 hidden">
+                            <div class="w-px h-4 bg-white/10 mx-1"></div>
+                            <button onclick="window.app.changeQueuePage(-1)" id="q-prev"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                                <i class="fas fa-chevron-left text-xs"></i>
+                            </button>
+                            <span id="q-page-info"
+                                class="text-[10px] font-mono font-bold text-slate-400 bg-black/20 px-2 py-1 rounded-md min-w-[40px] text-center">1/1</span>
+                            <button onclick="window.app.changeQueuePage(1)" id="q-next"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                                <i class="fas fa-chevron-right text-xs"></i>
+                            </button>
+                        </div>
+
                     </div>
                 </div>
-                <div id="queue-list" class="grid gap-4 overflow-y-auto min-h-0 pr-2 pb-20">
+
+                <div id="queue-list" class="grid gap-4 overflow-y-auto min-h-0 pr-2 pb-4 flex-grow custom-scroll">
                     <!-- Queue Items -->
                     <div class="text-center py-20 opacity-30">
                         <i class="fas fa-wind text-4xl mb-3"></i>
                         <p>No active generations</p>
                     </div>
                 </div>
+                <!-- Queue Pagination -->
+
             </div>
         </div>
 
         <!-- View: Gallery -->
         <div id="view-gallery" class="view-section absolute inset-0 overflow-y-auto p-4 sm:p-8 hidden">
             <div class="max-w-7xl mx-auto h-full flex flex-col">
-                <div class="flex flex-wrap gap-4 justify-between items-center mb-6 shrink-0">
-                    <div class="flex items-baseline gap-4">
-                        <h2 class="text-2xl font-bold text-white">Gallery</h2>
-                        <div id="gallery-stats" class="text-xs font-mono text-slate-400 opacity-0 transition-opacity">
-                            <span class="text-violet-400 font-bold" id="gal-total-count">0</span> images total
-                            <span class="mx-2 text-slate-600">|</span>
-                            <span class="text-white" id="gal-date-count">0</span> in view
+                <!-- Unified Gallery Toolbar -->
+                <div
+                    class="glass p-3 rounded-2xl mb-6 flex flex-wrap gap-4 justify-between items-center border border-white/10 shadow-lg relative z-50">
+                    <div class="flex items-center gap-4 px-2">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-violet-600/20 flex items-center justify-center border border-violet-500/30 text-violet-300">
+                            <i class="fas fa-images"></i>
+                        </div>
+                        <div>
+                            <h2 class="text-xl font-bold text-white leading-tight">Gallery</h2>
+                            <div id="gallery-stats"
+                                class="text-[10px] font-mono text-slate-400 opacity-0 transition-opacity flex gap-2">
+                                <span><span class="text-violet-400 font-bold" id="gal-total-count">0</span>
+                                    stored</span>
+                                <span class="text-slate-600">|</span>
+                                <span><span class="text-white" id="gal-date-count">0</span> visible</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="flex gap-2 items-center relative">
-                        <!-- Date Navigator -->
-                        <div class="flex items-center glass p-1 rounded-lg gap-1">
-                            <button onclick="window.app.navigateDate(-1)"
-                                class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
-                                <i class="fas fa-chevron-left"></i>
-                            </button>
+                    <!-- Controls Group -->
+                    <div
+                        class="flex gap-2 items-center bg-slate-900/50 p-1.5 rounded-xl border border-white/5 shadow-inner">
 
-                            <button onclick="window.app.toggleDatePopover()" id="current-date-display"
-                                class="px-3 h-8 flex items-center justify-center text-xs font-mono font-bold text-violet-300 hover:bg-white/5 rounded-md transition-colors min-w-[120px]">
-                                All Dates
+                        <!-- Sort Dropdown -->
+                        <div class="relative">
+                            <button onclick="window.app.toggleDropdown('gallery-sort-dropdown', event)"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
+                                title="Sort Order">
+                                <i class="fas fa-sort-amount-down"></i>
                             </button>
-
-                            <button onclick="window.app.navigateDate(1)"
-                                class="w-8 h-8 flex items-center justify-center rounded-md hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
-                                <i class="fas fa-chevron-right"></i>
-                            </button>
+                            <div id="gallery-sort-dropdown"
+                                class="absolute top-full right-0 mt-2 w-48 bg-slate-950 rounded-xl overflow-hidden shadow-2xl z-[100] hidden transition-all border border-white/20 shadow-black/50">
+                                <div class="p-1 space-y-0.5">
+                                    <div
+                                        class="px-3 py-2 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-white/5 mb-1">
+                                        Sort By</div>
+                                    <button onclick="window.app.setGallerySort('newest')"
+                                        class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors flex justify-between items-center group/item">
+                                        <span>Newest First</span>
+                                        <i class="fas fa-check text-violet-400 opacity-0 data-[active]:opacity-100"
+                                            id="sort-check-newest"></i>
+                                    </button>
+                                    <button onclick="window.app.setGallerySort('oldest')"
+                                        class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors flex justify-between items-center group/item">
+                                        <span>Oldest First</span>
+                                        <i class="fas fa-check text-violet-400 opacity-0" id="sort-check-oldest"></i>
+                                    </button>
+                                    <div class="h-px bg-white/5 my-1"></div>
+                                    <button onclick="window.app.setGallerySort('name_asc')"
+                                        class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors flex justify-between items-center group/item">
+                                        <span>Name (A-Z)</span>
+                                        <i class="fas fa-check text-violet-400 opacity-0" id="sort-check-name_asc"></i>
+                                    </button>
+                                    <button onclick="window.app.setGallerySort('name_desc')"
+                                        class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors flex justify-between items-center group/item">
+                                        <span>Name (Z-A)</span>
+                                        <i class="fas fa-check text-violet-400 opacity-0" id="sort-check-name_desc"></i>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Date Popover (Mini Modal) -->
-                        <div id="date-popover"
-                            class="absolute top-full right-0 mt-2 w-64 glass rounded-xl overflow-hidden shadow-2xl z-50 hidden flex flex-col max-h-[400px]">
-                            <div class="p-3 border-b border-white/5 bg-slate-900/50">
-                                <input type="text" id="date-search" placeholder="Search dates..."
-                                    class="w-full bg-slate-800/50 border border-slate-700/50 rounded-lg px-2 py-1 text-xs text-white outline-none focus:border-violet-500/50">
-                            </div>
-                            <div id="date-list" class="overflow-y-auto custom-scroll p-2 space-y-1">
-                                <!-- Injected Options -->
+                        <div class="w-px h-4 bg-white/10"></div>
+
+                        <!-- Pagination (In-Toolbar) -->
+                        <div id="gallery-pagination" class="flex items-center gap-1 hidden">
+                            <button onclick="window.app.changeGalleryPage(-1)" id="gal-prev"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                                <i class="fas fa-chevron-left text-xs"></i>
+                            </button>
+                            <span id="gal-page-info"
+                                class="text-[10px] font-mono font-bold text-slate-400 bg-black/20 px-2 py-1 rounded-md min-w-[40px] text-center">1/1</span>
+                            <button onclick="window.app.changeGalleryPage(1)" id="gal-next"
+                                class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed">
+                                <i class="fas fa-chevron-right text-xs"></i>
+                            </button>
+                            <div class="w-px h-4 bg-white/10 ml-1"></div>
+                        </div>
+
+                        <!-- Calendar Trigger -->
+                        <div class="relative">
+                            <button onclick="window.app.toggleCalendar()" id="current-date-display"
+                                class="px-3 h-8 flex items-center justify-center text-xs font-mono font-bold text-violet-300 hover:bg-white/5 rounded-lg transition-colors min-w-[140px] gap-2">
+                                <i class="far fa-calendar-alt text-slate-500"></i>
+                                <span>All Dates</span>
+                            </button>
+
+                            <!-- Calendar Popover -->
+                            <div id="calendar-popover"
+                                class="absolute top-full right-0 mt-4 w-72 bg-slate-950 rounded-2xl overflow-hidden shadow-2xl z-[100] hidden border border-white/20 p-4 shadow-black/50">
+                                <!-- Calendar Header -->
+                                <div class="flex justify-between items-center mb-4">
+                                    <button onclick="window.app.changeCalendarMonth(-1)"
+                                        class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                                        <i class="fas fa-chevron-left text-xs"></i>
+                                    </button>
+                                    <span id="calendar-month-year" class="text-sm font-bold text-white">Month
+                                        Year</span>
+                                    <button onclick="window.app.changeCalendarMonth(1)"
+                                        class="w-6 h-6 flex items-center justify-center rounded-full hover:bg-white/10 text-slate-400 hover:text-white transition-colors">
+                                        <i class="fas fa-chevron-right text-xs"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Days Grid -->
+                                <div class="grid grid-cols-7 gap-1 text-center mb-2">
+                                    <span class="text-[10px] text-slate-600 font-bold uppercase">Su</span>
+                                    <span class="text-[10px] text-slate-600 font-bold uppercase">Mo</span>
+                                    <span class="text-[10px] text-slate-600 font-bold uppercase">Tu</span>
+                                    <span class="text-[10px] text-slate-600 font-bold uppercase">We</span>
+                                    <span class="text-[10px] text-slate-600 font-bold uppercase">Th</span>
+                                    <span class="text-[10px] text-slate-600 font-bold uppercase">Fr</span>
+                                    <span class="text-[10px] text-slate-600 font-bold uppercase">Sa</span>
+                                </div>
+                                <div id="calendar-grid" class="grid grid-cols-7 gap-1">
+                                    <!-- Injected Days -->
+                                </div>
+
+                                <!-- All Dates Button -->
+                                <div class="mt-4 pt-3 border-t border-white/10">
+                                    <button onclick="window.app.selectDate(null)"
+                                        class="w-full py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-bold text-slate-300 hover:text-white transition-colors">
+                                        Show All Dates
+                                    </button>
+                                </div>
                             </div>
                         </div>
+
+                        <div class="w-px h-4 bg-white/10"></div>
 
                         <button onclick="window.app.loadGallery()"
-                            class="glass-btn bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs"
+                            class="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                             title="Refresh">
                             <i class="fas fa-sync-alt"></i>
                         </button>
@@ -415,20 +577,13 @@
                 </div>
 
                 <!-- Pagination (Moved to Top) -->
-                <div id="gallery-pagination"
-                    class="flex justify-between items-center mb-4 hidden bg-slate-900/30 p-2 rounded-lg border border-white/5">
-                    <button onclick="window.app.changeGalleryPage(-1)" id="gal-prev"
-                        class="glass-btn px-3 py-1.5 text-xs disabled:opacity-30 disabled:cursor-not-allowed hover:bg-violet-600"><i
-                            class="fas fa-chevron-left mr-2"></i> Prev</button>
-                    <span id="gal-page-info" class="text-xs text-slate-400 font-mono">Page 1</span>
-                    <button onclick="window.app.changeGalleryPage(1)" id="gal-next"
-                        class="glass-btn px-3 py-1.5 text-xs disabled:opacity-30 disabled:cursor-not-allowed hover:bg-violet-600">Next
-                        <i class="fas fa-chevron-right ml-2"></i></button>
-                </div>
+
 
                 <div id="gallery-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mb-6">
                     <!-- Gallery Items -->
                 </div>
+
+
             </div>
         </div>
 
@@ -456,7 +611,8 @@
                     <!-- Intervals -->
                     <section class="glass p-4 rounded-xl space-y-4">
                         <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                            <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wide">Application Intervals
+                            <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wide">Application
+                                Intervals
                             </h3>
                             <button onclick="window.app.saveGeneralSettings()"
                                 class="glass-btn bg-violet-600 hover:bg-violet-500 text-xs px-3 py-1 font-bold shadow-lg"><i
@@ -479,6 +635,12 @@
                                 <div class="text-[10px] text-slate-500 mt-1">How often to check Horde Status & Kudos.
                                 </div>
                             </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 mb-1">Items Per Page</label>
+                                <input type="number" id="setting-items-per-page" min="5" max="100" step="5"
+                                    class="glass-input w-full">
+                                <div class="text-[10px] text-slate-500 mt-1">Pagination limit for Queue & Gallery.</div>
+                            </div>
                         </div>
                     </section>
 
@@ -486,7 +648,8 @@
                         <!-- Data Management (Moved here) -->
                         <div class="flex justify-between items-center mb-4">
                             <div class="text-sm font-bold text-red-300">Data Management</div>
-                            <div class="text-[10px] text-red-400 bg-red-900/20 px-2 py-0.5 rounded">Critical Zone</div>
+                            <div class="text-[10px] text-red-400 bg-red-900/20 px-2 py-0.5 rounded">Critical Zone
+                            </div>
                         </div>
 
                         <div class="space-y-4">
@@ -529,7 +692,8 @@
                 <div id="tab-content-generation" class="settings-tab-content space-y-6 hidden">
                     <section class="glass p-4 rounded-xl space-y-4">
                         <div class="flex justify-between items-center border-b border-white/5 pb-2">
-                            <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wide">Content Policies</h3>
+                            <h3 class="text-sm font-bold text-slate-300 uppercase tracking-wide">Content Policies
+                            </h3>
                             <button onclick="window.app.saveGenerationSettings()"
                                 class="glass-btn bg-violet-600 hover:bg-violet-500 text-xs px-3 py-1 font-bold shadow-lg"><i
                                     class="fas fa-save mr-1"></i> Save Changes</button>
@@ -564,7 +728,8 @@
                                 <input type="checkbox" id="conf-slow" class="accent-violet-500 w-5 h-5">
                             </label>
                             <div>
-                                <label class="block text-xs font-bold text-slate-400 mb-1">Worker Blacklist (IDs, comma
+                                <label class="block text-xs font-bold text-slate-400 mb-1">Worker Blacklist (IDs,
+                                    comma
                                     separated)</label>
                                 <textarea id="conf-blacklist"
                                     class="glass-input w-full h-20 font-mono text-xs"></textarea>
@@ -670,7 +835,8 @@
                 <div class="p-4 border-b border-white/10 bg-slate-900/50 flex justify-between items-center">
                     <h3 class="font-bold">Form Designer</h3>
                     <button onclick="app.router.navigate('settings')" class="text-sm hover:text-white text-slate-400"><i
-                            class="fas fa-times mr-1"></i> Close</button>
+                            class="fas fa-times mr-1"></i>
+                        Close</button>
                 </div>
                 <div class="flex-grow flex min-h-0">
                     <div class="w-1/2 border-r border-white/10 p-0 h-full">
@@ -744,7 +910,7 @@
 
     <!-- 2. Settings Store -->
     <script>
-        const APP_VERSION = '0.0.10';
+        const APP_VERSION = '0.0.11';
 
         const DEFAULTS = {
             horde: { keys: [], activeKeyId: null, apiUrl: 'https://aihorde.net/api/v2' },
@@ -1822,10 +1988,17 @@
                     if (blob.type === 'image/webp') ext = 'webp';
                     if (blob.type === 'image/jpeg') ext = 'jpg';
 
-                    const date = new Date().toISOString().split('T')[0];
-                    await window.storageClient.uploadImage(blob, `${job.id}.${ext}`, date);
+                    const now = new Date();
+                    // Use ISO string to ensure consistent YYYY-MM-DD format parts
+                    // Note: This uses UTC. If local time is preferred, we can adjust, but ISO is safer for consistency.
+                    const isoDate = now.toISOString().split('T')[0]; // "2026-01-30"
+                    const [year, month, day] = isoDate.split('-');
+                    const folderPath = `${year}/${month}/${day}`;
+                    const filename = `${now.getTime()}_${job.id}`;
+
+                    await window.storageClient.uploadImage(blob, `${filename}.${ext}`, folderPath);
                     const meta = { prompt: job.prompt, params: job.params, horde_id: job.id, created: job.created, worker: job.result.generations[0].worker_name };
-                    await window.storageClient.uploadMetadata(meta, `${job.id}.json`, date);
+                    await window.storageClient.uploadMetadata(meta, `${filename}.json`, folderPath);
                     console.log(`Uploaded ${job.id} to GitHub`);
                 } catch (e) { console.error("Auto-upload failed", e); }
             }
@@ -1871,8 +2044,68 @@
                 this.notify();
             }
 
-            removeJob(jobId) { this.queue = this.queue.filter(j => j.id !== jobId); this.notify(); }
-            clearFinished() { this.queue = this.queue.filter(j => j.status !== 'done' && j.status !== 'error'); this.notify(); }
+            removeJob(jobId) { this.queue = this.queue.filter(j => j.id !== jobId); this.save(); this.notify(); }
+
+            async quickCancel(jobId) {
+                const job = this.queue.find(j => j.id === jobId);
+                if (!job) return;
+
+                // Cancel API if pending (waiting/processing)
+                if (job.status === 'waiting' || job.status === 'processing') {
+                    try {
+                        if (window.hordeClient) await window.hordeClient.cancelRequest(job.id);
+                    } catch (e) { console.warn(`Quick Cancel failed for ${job.id}`, e); }
+                }
+
+                this.removeJob(jobId);
+                window.notifications.show("Request removed", "info");
+            }
+
+            async clearQueue(type) {
+                let toRemove = [];
+                let msg = "";
+
+                // Determine Targets
+                if (type === 'all') {
+                    toRemove = this.queue;
+                    msg = "Clear ALL requests inside the queue? This will cancel pending generations.";
+                } else if (type === 'done') {
+                    toRemove = this.queue.filter(j => j.status === 'done');
+                    msg = "Clear all FINISHED requests?";
+                } else if (type === 'error') {
+                    toRemove = this.queue.filter(j => j.status === 'error');
+                    msg = "Clear all FAILED requests?";
+                } else if (type === 'pending') {
+                    toRemove = this.queue.filter(j => j.status === 'waiting' || j.status === 'processing');
+                    msg = "Cancel and clear all PENDING requests?";
+                }
+
+                if (toRemove.length === 0) return;
+
+                // Confirmation
+                if (!await window.dialogs.confirm("Confirm Clear", msg)) return;
+
+                // Process Cancellations
+                let cancelCount = 0;
+                for (const job of toRemove) {
+                    if (job.status === 'waiting' || job.status === 'processing') {
+                        try {
+                            if (window.hordeClient) await window.hordeClient.cancelRequest(job.id);
+                            cancelCount++;
+                        } catch (e) { console.warn(`Cancel failed for ${job.id}`, e); }
+                    }
+                }
+
+                // Remove from Queue
+                const removeIds = new Set(toRemove.map(j => j.id));
+                this.queue = this.queue.filter(j => !removeIds.has(j.id));
+
+                this.save();
+                this.notify();
+
+                const cancelledText = cancelCount > 0 ? ` (${cancelCount} cancelled)` : '';
+                window.notifications.show(`Cleared ${toRemove.length} items${cancelledText}`, 'success');
+            }
 
             startPolling() {
                 if (this.intervalId) return;
@@ -1884,27 +2117,52 @@
             async process() {
                 let activeCount = 0;
                 for (const job of this.queue) {
+                    // Logic Update: Don't stop polling if 'impossible' but we want to wait (default behavior now)
                     if (job.status === 'done' || job.status === 'error') continue;
                     activeCount++;
+
                     try {
                         const check = await window.hordeClient.checkStatus(job.id);
+
                         if (check.done) {
                             const result = await window.hordeClient.getResult(job.id);
                             job.status = 'done'; job.result = result;
                             this.handleAutoUpload(job);
-                        } else if (!check.is_possible) {
-                            if (job.force_track) {
-                                job.status = 'waiting';
-                                job.result = { message: "Waiting for workers..." };
-                            } else {
-                                job.status = 'error'; job.result = { message: "Generation impossible (no workers)" };
-                            }
                         } else {
-                            job.status = 'processing'; job.wait_time = check.wait_time; job.position = check.queue_position;
+                            // Live Status Update
+                            if (!check.is_possible) {
+                                // Mark as impossible but STAY WAITING (unless explicitly cancelled/errored by other logic)
+                                job.is_impossible = true;
+                                job.result = { message: "Waiting for workers... (Currently Impossible)" };
+                                // Do NOT set status to 'error'
+                            } else {
+                                job.is_impossible = false; // Clear flag if it becomes possible
+                            }
+
+                            // Update waits
+                            job.status = check.processing ? 'processing' : 'waiting'; // API returns 'processing' boolean? checkStatus usually returns wait_time etc.
+                            // Actually checkStatus returns { done, is_possible, wait_time, queue_position, processing, kudos, ... }
+                            // If `processing` is 1/true, then it's processing. available in v2? yes.
+
+                            // Better logic for status string:
+                            if (check.processing) job.status = 'processing';
+                            else job.status = 'waiting';
+
+                            job.wait_time = check.wait_time;
+                            job.position = check.queue_position;
                         }
-                    } catch (e) { console.warn(`Check failed for ${job.id}`, e); }
+                    } catch (e) {
+                        // Only mark error if 404 (removed) or actual failure, otherwise warn and retry
+                        console.warn(`Check failed for ${job.id}`, e);
+                        // If 404, usually means job doesn't exist? Horde returns JSON error usually.
+                        // For network error, we skip this turn.
+                    }
                 }
                 this.notify();
+
+                // If we found active jobs but loop stopped? 
+                // No, this recursive loop style (setInterval) continues until cleared.
+                // Logic: Stop polling ONLY if activeCount is 0.
                 if (activeCount === 0) this.stopPolling();
             }
 
@@ -2279,6 +2537,23 @@
             galleryImages: [], // cache for current date
             galleryPage: 0,
             galleryObjectUrls: [], // Manage memory for blobs
+            // Queue State
+            queueSort: 'newest',
+            queuePage: 0,
+
+            toggleDropdown(id, e) {
+                if (e) e.stopPropagation();
+                // Close others
+                ['queue-clear-dropdown', 'gallery-sort-dropdown'].forEach(dId => {
+                    if (dId !== id) {
+                        const el = document.getElementById(dId);
+                        if (el) el.classList.add('hidden');
+                    }
+                });
+
+                const el = document.getElementById(id);
+                if (el) el.classList.toggle('hidden');
+            },
 
             async init() {
                 console.log("Antigravity Horde SingleFile Initializing...");
@@ -2289,6 +2564,41 @@
                 this.loadModels();
                 this.router.navigate('generate');
                 this.setupListeners();
+
+                // Global Click Listener for Dropdowns
+                window.addEventListener('click', (e) => {
+                    // If clicking outside dropdown buttons/panels, close them
+                    // We can just forcefully close all known dropdowns if the click wasn't on a toggle
+                    // But wait, if user clicks INSIDE the dropdown, it shouldn't close? 
+                    // Usually for menus, clicking an item closes it.
+                    // But if clicking blank space in menu?
+                    // Simplest: Checks if target is inside a specific container?
+                    // Or just close everything and let stopPropagation on specific elements handle it?
+
+                    // If we rely on stopPropagation in toggleDropdown, then a click anywhere else closes.
+                    // But we also need clicking INSIDE the dropdown to NOT close it unless it's a button.
+                    // Actually, user said "mouse clicks on the outside close the dropdowns".
+                    // So we need to check if target is inside the dropdown.
+
+                    // So we need to check if target is inside the dropdown.
+
+                    const dropdowns = ['queue-clear-dropdown', 'gallery-sort-dropdown', 'queue-sort-dropdown'];
+                    let isClickInside = false;
+
+                    dropdowns.forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el && !el.classList.contains('hidden') && el.contains(e.target)) {
+                            isClickInside = true;
+                        }
+                    });
+
+                    if (!isClickInside) {
+                        dropdowns.forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el) el.classList.add('hidden');
+                        });
+                    }
+                });
             },
 
             renderSettings() {
@@ -2302,10 +2612,13 @@
                 const config = window.settingsStore.getConfig();
                 if (!config) return;
                 // General
+                // General
                 const poll = document.getElementById('setting-poll-interval');
                 if (poll) poll.value = config.general.pollInterval;
                 const hb = document.getElementById('setting-heartbeat-interval');
                 if (hb) hb.value = config.general.heartbeatInterval;
+                const ipp = document.getElementById('setting-items-per-page');
+                if (ipp) ipp.value = config.general.itemsPerPage || 20;
 
                 // Generation
                 if (config.generation) {
@@ -2359,15 +2672,24 @@
                     // Store strict source of truth.
                     this.galleryAllFiles = data.tree
                         .filter(f => f.type === 'blob' && /\.(png|webp|jpg|jpeg)$/i.test(f.path))
-                        .map(f => ({
-                            path: f.path, // '2023-10-27/img.png'
-                            name: f.path.split('/').pop(), // 'img.png'
-                            folder: f.path.split('/')[0], // '2023-10-27'
-                            // Construct content API URL for secure fetching
-                            url: `https://api.github.com/repos/${owner}/${repo}/contents/${f.path}`
-                        }));
+                        .map(f => {
+                            const parts = f.path.split('/');
+                            let folderKey = parts[0];
+                            // Detect YYYY/MM/DD structure
+                            if (parts.length >= 4 && /^\d{4}$/.test(parts[0]) && /^\d{2}$/.test(parts[1]) && /^\d{2}$/.test(parts[2])) {
+                                folderKey = `${parts[0]}-${parts[1]}-${parts[2]}`;
+                            }
 
-                    // 3. Populate Date Selector
+                            return {
+                                path: f.path,
+                                name: parts[parts.length - 1],
+                                folder: folderKey,
+                                // Construct content API URL for secure fetching
+                                url: `https://api.github.com/repos/${owner}/${repo}/contents/${f.path}`
+                            };
+                        });
+
+                    // 3. Calendar Init
                     const dateCounts = {};
                     this.galleryAllFiles.forEach(f => {
                         if (/^\d{4}-\d{2}-\d{2}$/.test(f.folder)) {
@@ -2375,31 +2697,15 @@
                         }
                     });
 
-                    const sortedDates = Object.keys(dateCounts).sort((a, b) => b.localeCompare(a));
+                    this.availableDates = Object.keys(dateCounts).sort((a, b) => b.localeCompare(a));
+                    this.dateCounts = dateCounts;
 
-                    this.availableDates = sortedDates;
+                    // Init Calendar State to show current month or today
+                    const now = new Date();
+                    this.currentCalendarYear = now.getFullYear();
+                    this.currentCalendarMonth = now.getMonth(); // 0-indexed
 
-                    const renderDateList = (filterText = '') => {
-                        const ft = filterText.toLowerCase();
-                        let listHtml = '';
-                        this.availableDates.forEach(d => {
-                            if (ft && !d.includes(ft)) return;
-                            listHtml += `<button onclick="window.app.selectDate('${d}')" class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors flex justify-between group">
-                                <span>${d}</span>
-                                <span class="opacity-50 group-hover:opacity-100">${dateCounts[d]}</span>
-                            </button>`;
-                        });
-
-                        if (dateList) {
-                            dateList.innerHTML = `<button onclick="window.app.selectDate(null)" class="w-full text-left px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-colors flex justify-between group border-b border-white/5 mb-1">
-                                <span>All Dates</span>
-                                <span class="opacity-50 group-hover:opacity-100">${this.galleryAllFiles.length}</span>
-                            </button>` + listHtml;
-                        }
-                    };
-
-                    renderDateList();
-                    if (dateSearch) dateSearch.oninput = (e) => renderDateList(e.target.value);
+                    this.renderCalendar();
 
                     // 4. Update Stats
                     document.getElementById('gal-total-count').innerText = this.galleryAllFiles.length;
@@ -2417,46 +2723,110 @@
                 }
             },
 
-            toggleDatePopover() {
-                const p = document.getElementById('date-popover');
+            toggleCalendar() {
+                const p = document.getElementById('calendar-popover');
                 if (p) {
                     p.classList.toggle('hidden');
                     if (!p.classList.contains('hidden')) {
-                        document.getElementById('date-search')?.focus();
+                        this.renderCalendar();
                     }
+                }
+            },
+
+            changeCalendarMonth(delta) {
+                let newMonth = this.currentCalendarMonth + delta;
+                let newYear = this.currentCalendarYear;
+
+                if (newMonth > 11) {
+                    newMonth = 0;
+                    newYear++;
+                } else if (newMonth < 0) {
+                    newMonth = 11;
+                    newYear--;
+                }
+
+                this.currentCalendarMonth = newMonth;
+                this.currentCalendarYear = newYear;
+                this.renderCalendar();
+            },
+
+            renderCalendar() {
+                const grid = document.getElementById('calendar-grid');
+                const header = document.getElementById('calendar-month-year');
+                if (!grid || !header) return;
+
+                const year = this.currentCalendarYear;
+                const month = this.currentCalendarMonth;
+
+                // Format Month Year
+                const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+                header.innerText = `${monthNames[month]} ${year}`;
+
+                // Calculate Days
+                const firstDay = new Date(year, month, 1).getDay(); // 0 = Sun
+                const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+                grid.innerHTML = '';
+
+                // Empty Slots
+                for (let i = 0; i < firstDay; i++) {
+                    grid.innerHTML += '<div></div>';
+                }
+
+                // Days
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                    const count = this.dateCounts ? (this.dateCounts[dateStr] || 0) : 0;
+                    const isSelected = this.currentGalleryDate === dateStr;
+
+                    let bgClass = "hover:bg-white/10 text-slate-400 cursor-pointer";
+                    if (count > 0) bgClass = "bg-violet-500/20 text-violet-200 hover:bg-violet-500/40 font-bold cursor-pointer border border-violet-500/30";
+                    if (isSelected) bgClass = "bg-violet-500 text-white shadow-lg shadow-violet-500/50 cursor-default";
+                    if (count === 0 && !isSelected) bgClass = "text-slate-600 cursor-default hover:bg-transparent"; // Disable empty days interaction? Or allow empty selection?
+                    // Let's allow selecting only days with images to start, or allow all? User didn't specify. 
+                    // Usually better to disable empty days or make them generic. I'll make empty days dimmed.
+
+                    const clickAction = count > 0 ? `onclick="window.app.selectDate('${dateStr}')"` : '';
+
+                    grid.innerHTML += `
+                        <div ${clickAction} 
+                             class="h-8 w-8 flex flex-col items-center justify-center rounded-lg text-xs transition-all mx-auto relative group ${bgClass}">
+                            <span>${day}</span>
+                            ${count > 0 && !isSelected ? `<span class="absolute -top-1 -right-1 w-2 h-2 bg-violet-400 rounded-full"></span>` : ''}
+                        </div>
+                    `;
                 }
             },
 
             selectDate(date) {
                 this.currentGalleryDate = date; // null = All
                 const display = document.getElementById('current-date-display');
-                const popover = document.getElementById('date-popover');
+                const popover = document.getElementById('calendar-popover');
+                const span = display.querySelector('span');
 
-                if (display) display.innerText = date || "All Dates";
+                if (span) span.innerText = date || "All Dates";
                 if (popover) popover.classList.add('hidden');
 
                 this.filterGallery();
+                this.renderCalendar(); // Re-render to update selection
             },
 
-            navigateDate(dir) {
-                if (!this.availableDates || this.availableDates.length === 0) return;
+            setGallerySort(mode) {
+                this.currentGallerySort = mode;
+                this.updateGallerySortUI();
+                this.filterGallery();
+                document.getElementById('gallery-sort-dropdown')?.classList.add('hidden');
+            },
 
-                let idx = -1;
-                if (this.currentGalleryDate) {
-                    idx = this.availableDates.indexOf(this.currentGalleryDate);
-                }
-
-                let newIdx;
-                if (idx === -1) {
-                    newIdx = 0;
-                } else {
-                    newIdx = idx - dir;
-                }
-
-                if (newIdx < 0) newIdx = 0;
-                if (newIdx >= this.availableDates.length) newIdx = this.availableDates.length - 1;
-
-                this.selectDate(this.availableDates[newIdx]);
+            updateGallerySortUI() {
+                // Update checks
+                ['newest', 'oldest', 'name_asc', 'name_desc'].forEach(m => {
+                    const icon = document.getElementById(`sort-check-${m}`);
+                    if (icon) {
+                        if (this.currentGallerySort === m) icon.dataset.active = "true";
+                        else delete icon.dataset.active;
+                    }
+                });
             },
 
             filterGallery() {
@@ -2468,8 +2838,17 @@
                     this.galleryImages = this.galleryAllFiles;
                 }
 
-                // Sort Newest First (Descending Path effectively sorts by date then name)
-                this.galleryImages.sort((a, b) => b.path.localeCompare(a.path));
+                // Default Sort
+                if (!this.currentGallerySort) this.currentGallerySort = 'newest';
+
+                // Sorting Logic
+                this.galleryImages.sort((a, b) => {
+                    if (this.currentGallerySort === 'newest') return b.path.localeCompare(a.path); // Descending Path (Year/Month/Day...)
+                    if (this.currentGallerySort === 'oldest') return a.path.localeCompare(b.path);
+                    if (this.currentGallerySort === 'name_asc') return a.name.localeCompare(b.name);
+                    if (this.currentGallerySort === 'name_desc') return b.name.localeCompare(a.name);
+                    return 0;
+                });
 
                 // Update View Counter
                 const countEl = document.getElementById('gal-date-count');
@@ -2496,7 +2875,7 @@
                     return;
                 }
 
-                const itemsPerPage = 20; // Hardcoded or config
+                const itemsPerPage = window.settingsStore.getConfig()?.general?.itemsPerPage || 20;
                 const totalPages = Math.ceil(this.galleryImages.length / itemsPerPage);
 
                 // Clamp
@@ -2782,10 +3161,12 @@
             saveGeneralSettings() {
                 const poll = parseInt(document.getElementById('setting-poll-interval').value) || 3000;
                 const heartbeat = parseInt(document.getElementById('setting-heartbeat-interval').value) || 30000;
+                const itemsPerPage = parseInt(document.getElementById('setting-items-per-page').value) || 20;
 
                 window.settingsStore.updateConfigSection('general', {
                     pollInterval: poll,
-                    heartbeatInterval: heartbeat
+                    heartbeatInterval: heartbeat,
+                    itemsPerPage: itemsPerPage
                 });
 
                 // Restart Services
@@ -3876,7 +4257,9 @@
                     job.status = 'waiting';
                     job.result = null;
                     job.force_track = true; // Force-ignore 'impossible' errors
+                    job.is_impossible = false; // Reset impossible flag
                     this.queue.notify();
+                    this.queue.startPolling(); // Instant restart
                     this.closeModal();
                     window.notifications.show("Resumed tracking job (Forced)", 'success');
                 }
@@ -3952,18 +4335,64 @@
 
                 // 3. Diff / Update
                 // Remove deleted
-                const currentIds = items.map(j => j.id);
+
+                // --- Pagination & Sorting Logic ---
+                // 1. Sort (On a copy to avoid mutating source)
+                // Create a shallow copy for display sorting
+                let displayItems = [...items];
+
+                displayItems.sort((a, b) => {
+                    const tA = new Date(a.created || 0).getTime();
+                    const tB = new Date(b.created || 0).getTime();
+                    if (this.queueSort === 'oldest') return tA - tB;
+                    return tB - tA; // Newest default
+                });
+
+                // 2. Paginate
+                const itemsPerPage = window.settingsStore.getConfig()?.general?.itemsPerPage || 20;
+                const totalPages = Math.ceil(displayItems.length / itemsPerPage);
+
+                // Clamp Page
+                if (this.queuePage < 0) this.queuePage = 0;
+                if (this.queuePage >= totalPages && totalPages > 0) this.queuePage = totalPages - 1;
+
+                const start = this.queuePage * itemsPerPage;
+                const end = start + itemsPerPage;
+                const visibleItems = displayItems.slice(start, end);
+
+                // Update Pagination Controls
+                const pageEl = document.getElementById('queue-pagination');
+                if (totalPages > 1) {
+                    pageEl.classList.remove('hidden');
+                    document.getElementById('q-page-info').innerText = `${this.queuePage + 1}/${totalPages}`;
+                    document.getElementById('q-prev').disabled = this.queuePage === 0;
+                    document.getElementById('q-next').disabled = this.queuePage === totalPages - 1;
+                } else {
+                    pageEl.classList.add('hidden');
+                }
+
+                // Render Sliced Items
+                const currentIds = visibleItems.map(j => j.id);
                 Array.from(list.children).forEach(el => {
+                    // Remove if not in CURRENT PAGE slice
                     if (!currentIds.includes(el.id.replace('card-', ''))) el.remove();
                 });
 
                 // Create or Update
-                items.forEach(job => {
+                visibleItems.forEach((job, index) => {
                     let el = document.getElementById(`card-${job.id}`);
 
                     // Template Data
-                    const statusColor = job.status === 'done' ? 'text-emerald-400' : job.status === 'error' ? 'text-red-400' : 'text-violet-400';
-                    const iconClass = job.status === 'processing' ? 'fa-spinner fa-spin text-violet-400' : job.status === 'error' ? 'fa-exclamation-circle text-red-500' : 'fa-clock text-slate-500';
+                    // Template Data
+                    let statusColor = job.status === 'done' ? 'text-emerald-400' : job.status === 'error' ? 'text-red-400' : 'text-violet-400';
+                    let iconClass = job.status === 'processing' ? 'fa-spinner fa-spin text-violet-400' : job.status === 'error' ? 'fa-exclamation-circle text-red-500' : 'fa-clock text-slate-500';
+
+                    // Impossible Override
+                    if (job.is_impossible && job.status !== 'done' && job.status !== 'error') {
+                        statusColor = 'text-amber-500 animate-pulse';
+                        iconClass = 'fa-exclamation-triangle text-amber-500';
+                    }
+
                     const notes = job.notes ? `<div class="text-xs text-amber-200 mt-1 italic truncate js-notes"><i class="fas fa-sticky-note mr-1"></i>${job.notes}</div>` : '';
 
                     if (!el) {
@@ -3994,10 +4423,23 @@
                                 <div class="text-[10px] text-slate-500 uppercase tracking-widest mb-0.5">Model</div>
                                 <div class="text-xs text-slate-300 truncate max-w-[150px]" title="${job.params?.model || 'Unknown'}">${job.params?.model || 'Unknown'}</div>
                             </div>
+                            </div>
                         </div>
+                        <button onclick="event.stopPropagation(); window.app.queue.quickCancel('${job.id}')" class="p-2 text-slate-600 hover:text-red-400 transition-colors z-10 relative" title="Remove/Cancel">
+                            <i class="fas fa-times"></i>
+                        </button>
                         <div class="text-slate-600 group-hover:text-violet-400 transition-colors"><i class="fas fa-chevron-right"></i></div>
                         `;
                         list.appendChild(el);
+                    }
+
+                    // Always Reconcile Position (New or Existing)
+                    if (list.children[index] !== el) {
+                        if (list.children[index]) {
+                            list.insertBefore(el, list.children[index]);
+                        } else {
+                            list.appendChild(el);
+                        }
                     }
 
                     // Update contents (Blind update is cheap enough for text, images handled carefully)
@@ -4028,21 +4470,46 @@
 
                     // Metrics
                     const metricsEl = el.querySelector('.js-metrics');
-                    const metricsHTML = job.status === 'processing'
+                    let metricsHTML = job.status === 'processing'
                         ? `<div class="text-xs text-slate-400"><i class="fas fa-users mr-1 opacity-50"></i>Pos: ${job.position}</div>
                                        <div class="text-xs text-slate-400"><i class="fas fa-hourglass-half mr-1 opacity-50"></i>${job.wait_time}s</div>`
                         : job.status === 'done'
                             ? `<div class="text-xs text-slate-500">Finished</div>` : '';
+
+                    if (job.is_impossible && job.status !== 'done' && job.status !== 'error') {
+                        metricsHTML = `<div class="text-xs text-amber-500 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i>Impossible (Retrying...)</div>`;
+                    }
+
                     if (metricsEl.innerHTML !== metricsHTML) metricsEl.innerHTML = metricsHTML;
                 });
             },
 
-            renderQueue_OLD(queueItems) {
-                list.innerHTML = `<div class="text-center py-20 opacity-30"><i class="fas fa-wind text-4xl mb-3"></i><p>No active generations</p></div>`;
-                return;
+
+
+
+
+            setQueueSort(mode) {
+                this.queueSort = mode;
+                this.queuePage = 0; // Reset page
+                // document.getElementById('queue-sort-label').innerText = mode === 'newest' ? 'Newest' : 'Oldest';
+
+                // Check marks
+                ['newest', 'oldest'].forEach(m => {
+                    const icon = document.getElementById(`q-sort-check-${m}`);
+                    if (icon) {
+                        if (m === mode) icon.parentElement.dataset.active = "true";
+                        else delete icon.parentElement.dataset.active;
+                    }
+                });
+
+                this.toggleDropdown('queue-sort-dropdown');
+                if (this.queue) this.renderQueue(this.queue.jobs);
             },
 
-
+            changeQueuePage(delta) {
+                this.queuePage += delta;
+                if (this.queue) this.renderQueue(this.queue.jobs);
+            },
 
             setupListeners() {
                 const genBtn = document.getElementById('btn-generate');
@@ -4347,4 +4814,3 @@
 </body>
 
 </html>
-
