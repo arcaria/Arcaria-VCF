@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.0.11 (Queue and Gallery Improvements)
+
+- **Pending Module Sorting & Pagination**:
+  - **Global Settings**: Added "Items Per Page" setting (affects both Queue and Gallery).
+  - **Sorting**: Added Newest/Oldest sorting to the Pending Queue.
+  - **Pagination**: Added pagination controls to the top toolbar.
+  - **Performance**: Optimized rendering with smart DOM reconciliation (no more full re-renders on poll).
+  - **Safe Sorting**: Fixed sorting logic to handle timestamps robustly and prevent reflow issues.
+  - **Clear Requests Refactor**: Clear requests by state and singular/particular clear.
+  - **Unified Toolbar**: Pending Queue now matches the sleek Glassmorphism style of the Gallery.
+  - **Alignment**: Fixed container nesting to align the list perfectly with the header.
+- **Gallery Improvements**:
+  - **Sorting**: Added powerful sorting capabilities (Newest, Oldest, Name A-Z, Name Z-A) to the Gallery toolbar.
+  - **Dropdown UX**: Implemented robust click-outside-to-close logic for all dropdowns (Sort, Date, etc.) to improve usability.
+  - **Integration**: Linked "Items Per Page" setting to the specific gallery pagination logic.
+
 ## v0.0.10
 
 - **New Feature: X/Y/Z Plot System**:
@@ -171,3 +187,4 @@ All notable changes to this project will be documented in this file.
   - **Notifications**: Custom non-blocking toast system.
   - **Dialogs**: Custom Promise-based modal dialogs replacing native alerts.
   - **Validation**: Smart inputs with character counting and Negative Prompt separation (`###`).
+
