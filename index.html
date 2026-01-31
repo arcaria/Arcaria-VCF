@@ -142,6 +142,40 @@
         }
 
         /* Ensure tailwind hidden works if loading slow */
+
+        /* Raw JSON / Matrix Theme */
+        .matrix-theme {
+            background-color: #000000 !important;
+            border: 1px solid #00ff00 !important;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2) !important;
+            color: #00ff00 !important;
+            font-family: 'Courier New', Courier, monospace !important;
+        }
+
+        .matrix-theme .glass-input {
+            background: #000000 !important;
+            border: 1px solid #003300 !important;
+            color: #00ff00 !important;
+            font-family: 'Courier New', Courier, monospace !important;
+        }
+
+        .matrix-theme .glass-input:focus {
+            border-color: #00ff00 !important;
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.3) !important;
+        }
+
+        .matrix-theme .glass-btn {
+            background: #001100 !important;
+            border: 1px solid #00ff00 !important;
+            color: #00ff00 !important;
+            box-shadow: none !important;
+            text-transform: uppercase;
+        }
+
+        .matrix-theme .glass-btn:hover {
+            background: #00ff00 !important;
+            color: #000000 !important;
+        }
     </style>
 </head>
 
@@ -282,8 +316,13 @@
                                         <i class="fas fa-bookmark mr-1"></i> Presets
                                     </button>
                                     <button onclick="window.app.openWildcardManager()"
-                                        class="glass-btn bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2 col-span-2">
+                                        class="glass-btn bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs py-2">
                                         <i class="fas fa-magic mr-1"></i> Wildcards
+                                    </button>
+                                    <button onclick="window.app.openRawJsonModal()"
+                                        class="glass-btn bg-slate-950 border border-slate-800 hover:border-green-500 hover:text-green-400 text-slate-500 text-xs py-2 font-mono"
+                                        title="Advanced Raw Request">
+                                        <i class="fas fa-code mr-1"></i> RAW
                                     </button>
                                 </div>
 
@@ -318,6 +357,66 @@
                     </div>
                 </div>
             </div>
+
+            <!-- RAW JSON MATRIX MODAL -->
+            <div id="modal-raw-json"
+                class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm matrix-theme font-mono">
+                <div
+                    class="w-full max-w-6xl h-[85vh] flex flex-col border border-green-500 shadow-[0_0_30px_rgba(0,255,0,0.2)] bg-black relative">
+                    <!-- Header -->
+                    <div class="flex justify-between items-center p-4 border-b border-green-900 bg-green-900/10">
+                        <div class="text-green-500 font-bold text-lg tracking-widest flex items-center gap-3">
+                            <i class="fas fa-terminal"></i>
+                            <span>SYSTEM_OVERRIDE :: RAW_PAYLOAD_INJECTION</span>
+                        </div>
+                        <button onclick="document.getElementById('modal-raw-json').classList.add('hidden')"
+                            class="text-green-700 hover:text-green-400">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+
+                    <!-- Body -->
+                    <div class="flex-grow flex overflow-hidden">
+                        <!-- Left: Editor -->
+                        <div class="flex-1 flex flex-col border-r border-green-900/50 p-4">
+                            <label class="text-green-700 text-xs mb-2 uppercase">Payload Buffer</label>
+                            <textarea id="raw-json-input"
+                                class="flex-grow bg-black text-green-500 font-mono text-sm p-4 border border-green-900/50 outline-none resize-none focus:border-green-500 focus:shadow-[0_0_15px_rgba(0,255,0,0.1)] custom-scroll"
+                                spellcheck="false"></textarea>
+                            <div id="raw-json-error" class="h-6 mt-2 text-red-500 text-xs font-bold"></div>
+                        </div>
+
+                        <!-- Right: Smart Keys -->
+                        <div class="w-80 flex flex-col bg-green-900/5 p-4 border-l border-green-900/30">
+                            <div
+                                class="text-green-600 text-xs mb-4 uppercase font-bold border-b border-green-900/50 pb-2">
+                                Parameter Matrix</div>
+
+                            <div id="raw-keys-container" class="flex-grow overflow-y-auto custom-scroll space-y-4">
+                                <!-- Dynamic Keys Injected Here -->
+                            </div>
+
+                            <div class="mt-4 pt-4 border-t border-green-900/50 text-[10px] text-green-800">
+                                * Missing keys (RED) will be auto-injected on click.<br>
+                                * Present keys (GREEN) are confirmed.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
+                    <div class="p-4 border-t border-green-900 bg-green-900/10 flex justify-end gap-3">
+                        <button onclick="window.app.formatRawJson()"
+                            class="px-4 py-2 border border-green-800 text-green-700 hover:text-green-400 hover:border-green-500 text-xs uppercase transition-colors">
+                            Format JSON
+                        </button>
+                        <button onclick="window.app.sendRawJsonRequest()"
+                            class="px-6 py-2 bg-green-900/20 border border-green-500 text-green-400 hover:bg-green-500 hover:text-black font-bold text-sm uppercase transition-all shadow-[0_0_10px_rgba(0,255,0,0.1)] hover:shadow-[0_0_20px_rgba(0,255,0,0.4)]">
+                            EXECUTE_PAYLOAD
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
         <!-- View: Pending -->
@@ -910,7 +1009,7 @@
 
     <!-- 2. Settings Store -->
     <script>
-        const APP_VERSION = '0.0.11';
+        const APP_VERSION = 'pre-0.1.1';
 
         const DEFAULTS = {
             horde: { keys: [], activeKeyId: null, apiUrl: 'https://aihorde.net/api/v2' },
@@ -1227,6 +1326,20 @@
                     method: 'DELETE',
                     headers: this._getHeaders()
                 });
+                return await res.json();
+            }
+
+            async sendRawPayload(payload) {
+                const body = typeof payload === 'string' ? payload : JSON.stringify(payload);
+                const res = await fetch(`${window.settingsStore.getHordeUrl()}/generate/async`, {
+                    method: 'POST',
+                    headers: this._getHeaders(),
+                    body: body
+                });
+                if (!res.ok) {
+                    const err = await res.json();
+                    throw new Error(err.message || "Raw Request Failed");
+                }
                 return await res.json();
             }
         }
@@ -4803,6 +4916,189 @@
                     this.queue.save();
                     window.notifications.show("Notes saved", 'success');
                     this.renderQueue(this.queue.jobs); // Refresh card
+                }
+            },
+
+            // --- RAW JSON MATRIX FEATURE ---
+            openRawJsonModal() {
+                const config = window.settingsStore.getConfig().generation;
+                const formParams = window.formEngine.getValues(document.getElementById('dynamic-form-container'));
+                const prompt = document.getElementById('prompt-input').value;
+                const negative = document.getElementById('negative-prompt-input').value; // Might be needed if manual
+                const model = document.getElementById('model-select').value;
+
+                // Construct baseline payload (similar to generateImage)
+                const payload = {
+                    prompt: prompt + (negative ? ' ### ' + negative : ''),
+                    params: { n: 1 },
+                    nsfw: config.nsfw,
+                    censor_nsfw: config.censor_nsfw,
+                    shared: config.shared,
+                    trusted_workers: config.trusted_workers,
+                    slow_workers: config.slow_workers,
+                    worker_blacklist: config.worker_blacklist ? config.worker_blacklist.split(',').filter(Boolean) : [],
+                    models: [model]
+                };
+
+                // Merge Form Params
+                const TOP_LEVEL_KEYS = new Set(['nsfw', 'censor_nsfw', 'trusted_workers', 'slow_workers', 'workers', 'worker_blacklist', 'models', 'source_image', 'source_processing', 'source_mask', 'r2', 'shared', 'replacement_filter', 'dry_run', 'proxied_account', 'disable_batching', 'webhook', 'blacklisted_workers']);
+
+                for (const [key, value] of Object.entries(formParams.params || {})) {
+                    if (TOP_LEVEL_KEYS.has(key)) {
+                        payload[key] = key === 'models' && !Array.isArray(value) ? [value] : value;
+                    } else {
+                        payload.params[key] = value;
+                    }
+                }
+
+                // Set Textarea
+                document.getElementById('raw-json-input').value = JSON.stringify(payload, null, 2);
+                document.getElementById('modal-raw-json').classList.remove('hidden');
+
+                // Init Picker
+                this.updateRawKeysPicker();
+
+                // Live Update Listener
+                const ta = document.getElementById('raw-json-input');
+                ta.oninput = () => this.updateRawKeysPicker();
+            },
+
+            formatRawJson() {
+                const ta = document.getElementById('raw-json-input');
+                try {
+                    const obj = JSON.parse(ta.value);
+                    ta.value = JSON.stringify(obj, null, 2);
+                    document.getElementById('raw-json-error').innerText = "";
+                } catch (e) {
+                    document.getElementById('raw-json-error').innerText = "Invalid JSON: " + e.message;
+                }
+            },
+
+            updateRawKeysPicker() {
+                const ta = document.getElementById('raw-json-input');
+                const container = document.getElementById('raw-keys-container');
+                let currentObj = {};
+                try {
+                    currentObj = JSON.parse(ta.value);
+                    document.getElementById('raw-json-error').innerText = "";
+                } catch (e) {
+                    document.getElementById('raw-json-error').innerText = "JSON Error..."; // Don't spam details on type
+                    return; // Can't analyze keys if invalid
+                }
+
+                // 1. Identify all possible keys (Top Level + Params)
+                // We use the Form Config to know what SHOULD exist
+                const formConfig = window.formEngine.config || [];
+                const allKeys = new Set();
+
+                // Standard Top Level
+                ['prompt', 'params', 'nsfw', 'censor_nsfw', 'trusted_workers', 'models', 'r2', 'dry_run'].forEach(k => allKeys.add(k));
+
+                // Dynamic Keys
+                formConfig.forEach(group => {
+                    group.fields?.forEach(field => allKeys.add(field.id));
+                });
+
+                // 2. Diff
+                const topLevelPresent = new Set(Object.keys(currentObj));
+                const paramsPresent = new Set(Object.keys(currentObj.params || {}));
+
+                const TOP_LEVEL_HINTS = new Set(['nsfw', 'censor_nsfw', 'trusted_workers', 'slow_workers', 'workers', 'worker_blacklist', 'models', 'source_image', 'source_processing', 'source_mask', 'r2', 'shared', 'replacement_filter', 'dry_run', 'proxied_account', 'disable_batching', 'webhook', 'blacklisted_workers', 'prompt', 'params']);
+
+                container.innerHTML = '';
+
+                // Helper to check presence
+                const isPresent = (key) => {
+                    if (TOP_LEVEL_HINTS.has(key)) return topLevelPresent.has(key);
+                    return paramsPresent.has(key);
+                };
+
+                // Render List
+                Array.from(allKeys).sort().forEach(key => {
+                    const present = isPresent(key);
+                    const isTop = TOP_LEVEL_HINTS.has(key);
+                    const targetPath = isTop ? "ROOT" : "params";
+
+                    const el = document.createElement('div');
+                    el.className = "flex items-center justify-between group";
+                    el.innerHTML = `
+                        <div class="text-[10px] font-mono ${present ? 'text-green-500' : 'text-green-900'}">${key} <span class="opacity-50 text-[9px]">(${targetPath})</span></div>
+                        <button class="w-4 h-4 rounded-sm border flex items-center justify-center text-[10px] transition-colors ${present ? 'border-green-500 bg-green-900/50 text-green-500 cursor-default' : 'border-red-900/50 text-red-900 hover:border-red-500 hover:text-red-500 cursor-pointer'}">
+                            ${present ? '<i class="fas fa-check"></i>' : '<i class="fas fa-plus"></i>'}
+                        </button>
+                    `;
+
+                    if (!present) {
+                        el.querySelector('button').onclick = () => this.injectRawKey(key, isTop);
+                    }
+                    container.appendChild(el);
+                });
+
+                // Check for UNKNOWN keys in TextArea?
+                const allKnown = new Set([...allKeys]);
+                const unknown = [];
+                [...topLevelPresent].forEach(k => !allKnown.has(k) && !TOP_LEVEL_HINTS.has(k) ? unknown.push(k) : null);
+                [...paramsPresent].forEach(k => !allKnown.has(k) ? unknown.push(k) : null);
+
+                if (unknown.length > 0) {
+                    const dvd = document.createElement('div');
+                    dvd.className = "mt-4 pt-2 border-t border-green-900/30 text-[10px] text-green-400";
+                    dvd.innerHTML = `<strong>NEW/UNKNOWN KEYS:</strong><br>` + unknown.join(', ');
+                    container.appendChild(dvd);
+                }
+            },
+
+            injectRawKey(key, isTop) {
+                const ta = document.getElementById('raw-json-input');
+                try {
+                    const obj = JSON.parse(ta.value);
+                    if (isTop) {
+                        obj[key] = ""; // Default empty string or null?
+                        if (key === 'models') obj[key] = ["stable_diffusion"];
+                    } else {
+                        if (!obj.params) obj.params = {};
+                        obj.params[key] = 0; // Default number? difficult to guess type.
+                    }
+                    ta.value = JSON.stringify(obj, null, 2);
+                    this.updateRawKeysPicker();
+                } catch (e) {
+                    alert("Fix JSON syntax first!");
+                }
+            },
+
+            async sendRawJsonRequest() {
+                const ta = document.getElementById('raw-json-input');
+                let payload;
+                try {
+                    payload = JSON.parse(ta.value);
+                } catch (e) {
+                    document.getElementById('raw-json-error').innerText = "CANNOT EXECUTE: Invalid JSON";
+                    return;
+                }
+
+                document.getElementById('raw-json-error').innerText = "EXECUTING PAYLOAD...";
+
+                try {
+                    const res = await window.hordeClient.sendRawPayload(payload);
+                    document.getElementById('modal-raw-json').classList.add('hidden');
+
+                    // Track it?
+                    if (res.id) {
+                        window.notifications.show(`System Override: Injection Successful [${res.id}]`, 'success');
+                        // Add to queue manually so we can verify result
+                        // We extract what we can for display
+                        const p = payload.prompt || "Raw JSON Request";
+                        const m = payload.models ? payload.models[0] : "Raw";
+                        const pm = payload.params || {};
+                        this.queue.addJob(res.id, p, pm, m);
+
+                        this.router.navigate('pending');
+                    } else {
+                        window.notifications.show("Executed, but no ID returned?", 'warning');
+                    }
+                } catch (e) {
+                    document.getElementById('raw-json-error').innerText = "EXECUTION FAILURE: " + e.message;
+                    console.error("Raw Req Fail", e);
                 }
             }
         };
