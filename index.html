@@ -289,6 +289,26 @@
 
                             </div>
 
+                            <!-- X/Y/Z Plot Section -->
+                            <div class="glass p-3 rounded-xl border border-white/5 mb-4">
+                                <div class="flex justify-between items-center mb-2">
+                                    <div
+                                        class="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2">
+                                        <i class="fas fa-chart-line text-amber-500"></i> X/Y/Z Plot
+                                    </div>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" id="plot-enabled" class="sr-only peer"
+                                            onchange="window.plotManager.toggle(this.checked)">
+                                        <div
+                                            class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-amber-600">
+                                        </div>
+                                    </label>
+                                </div>
+                                <div id="plot-config-container" class="hidden space-y-2">
+                                    <!-- Dynamic Plot Axes -->
+                                </div>
+                            </div>
+
                             <button id="btn-generate"
                                 class="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold py-3.5 px-4 rounded-xl shadow-lg shadow-violet-900/30 transition-all active:scale-[0.98] flex items-center justify-center gap-2 group">
                                 <span>Generate</span>
@@ -1281,7 +1301,173 @@
                 return currentPrompt;
             }
         }
+
         window.wildcardManager = new WildcardManager();
+
+        // 8b. Plot Manager (X/Y/Z)
+        class PlotManager {
+            constructor() {
+                this.enabled = false;
+                this.axes = []; // { id: 1, type: 'steps', values: '10, 20', target: '' }
+                this._idCounter = 0;
+            }
+
+            getAvailableParams() {
+                const base = window.formEngine.getValues(document.getElementById('dynamic-form-container')).params || {};
+                const keys = Object.keys(base).sort();
+                return ['prompt_sr', 'negative_prompt_sr', 'model', ...keys];
+            }
+
+            toggle(val) {
+                this.enabled = val;
+                this.render();
+            }
+
+            addAxis() {
+                this.axes.push({ id: ++this._idCounter, type: 'steps', values: '', target: '' });
+                this.render();
+            }
+
+            removeAxis(id) {
+                this.axes = this.axes.filter(a => a.id !== id);
+                this.render();
+            }
+
+            updateAxis(id, field, value) {
+                const axis = this.axes.find(a => a.id === id);
+                if (axis) {
+                    axis[field] = value;
+                    this.render();
+                }
+            }
+
+            render() {
+                const container = document.getElementById('plot-config-container');
+                if (!container) return;
+
+                if (!this.enabled) {
+                    container.innerHTML = '';
+                    container.classList.add('hidden');
+                    return;
+                }
+                container.classList.remove('hidden');
+
+                const params = this.getAvailableParams();
+
+                container.innerHTML = this.axes.map(axis => `
+                    <div class="glass p-2 rounded-xl border border-white/5 mb-2 relative group">
+                        <button onclick="window.plotManager.removeAxis(${axis.id})" class="absolute top-2 right-2 text-slate-500 hover:text-red-400 text-xs"><i class="fas fa-times"></i></button>
+                        
+                        <div class="mb-2 pr-6">
+                            <select onchange="window.plotManager.updateAxis(${axis.id}, 'type', this.value)" class="glass-input w-full text-xs py-1">
+                                ${params.map(p => {
+                    let label = p;
+                    if (p === 'prompt_sr') label = 'Prompt S/R';
+                    if (p === 'negative_prompt_sr') label = 'Negative Prompt S/R';
+                    return `<option value="${p}" ${axis.type === p ? 'selected' : ''}>${label}</option>`;
+                }).join('')}
+                            </select>
+                        </div>
+
+                        ${axis.type === 'prompt_sr' || axis.type === 'negative_prompt_sr' ? `
+                        <div class="mb-2">
+                             <input type="text" onchange="window.plotManager.updateAxis(${axis.id}, 'target', this.value)" value="${axis.target}" placeholder="Text to replace (target)" class="glass-input w-full text-xs" />
+                        </div>` : ''}
+
+                        <div>
+                             <input type="text" onchange="window.plotManager.updateAxis(${axis.id}, 'values', this.value)" value="${axis.values}" placeholder="Values (comma separated). Use __wildcard__ to expand." class="glass-input w-full text-xs" />
+                        </div>
+                    </div>
+                `).join('') + `
+                    <button onclick="window.plotManager.addAxis()" class="w-full glass-btn py-1 text-xs text-emerald-400 border border-dashed border-emerald-500/30 hover:bg-emerald-500/10">+ Add Axis</button>
+                `;
+            }
+
+            // Core Logic: Generate Combinations
+            getCombinations(basePrompt, baseParams, baseModel, baseNegative) {
+                // Parse values with Wildcard Expansion
+                const parsedAxes = this.axes.map(axis => {
+                    let rawVals = axis.values.split(',').map(v => v.trim()).filter(v => v !== '');
+                    let expandedVals = [];
+
+                    rawVals.forEach(val => {
+                        // Check for wildcard pattern __name__
+                        const match = val.match(/^__(.+?)__$/);
+                        if (match && window.wildcardManager) {
+                            const wName = match[1];
+                            const wData = window.wildcardManager.get(wName);
+                            if (wData) {
+                                // Expand!
+                                const items = Array.isArray(wData) ? wData : (wData.values || []);
+                                const prefix = !Array.isArray(wData) && wData.prefix ? wData.prefix : '';
+                                const suffix = !Array.isArray(wData) && wData.suffix ? wData.suffix : '';
+
+                                // If items exist, add them all
+                                if (items.length > 0) {
+                                    const finalItems = items.map(item => `${prefix}${item}${suffix}`);
+                                    expandedVals.push(...finalItems);
+                                } else {
+                                    expandedVals.push(val); // Keep original if empty?
+                                }
+                            } else {
+                                expandedVals.push(val); // Keep original if not found
+                            }
+                        } else {
+                            expandedVals.push(val);
+                        }
+                    });
+
+                    return { ...axis, vals: expandedVals };
+                }).filter(a => a && a.vals.length > 0);
+
+                if (parsedAxes.length === 0) return [];
+
+                // Cartesian Product
+                const cartesian = (...a) => a.reduce((a, b) => a.flatMap(d => b.map(e => [d, e].flat())));
+                const options = parsedAxes.map(a => a.vals);
+
+                const combinations = options.length === 1 ? options[0].map(v => [v]) : cartesian(...options);
+
+                const jobs = [];
+
+                combinations.forEach(combo => {
+                    const overrides = { params: { ...baseParams }, prompt: basePrompt, model: baseModel, negative: baseNegative, meta: [] };
+
+                    // Apply each axis
+                    combo.forEach((val, idx) => {
+                        const axis = parsedAxes[idx];
+                        const label = `${axis.type}=${val}`;
+                        overrides.meta.push(label);
+
+                        if (axis.type === 'model') {
+                            overrides.model = val;
+                        } else if (axis.type === 'prompt_sr') {
+                            if (axis.target) {
+                                overrides.prompt = overrides.prompt.replace(axis.target, val);
+                            }
+                        } else if (axis.type === 'negative_prompt_sr') {
+                            if (axis.target) {
+                                overrides.negative = overrides.negative.replace(axis.target, val);
+                            }
+                        } else {
+                            // Standard Param
+                            if (typeof baseParams[axis.type] === 'number') {
+                                overrides.params[axis.type] = Number(val);
+                            } else if (typeof baseParams[axis.type] === 'boolean') {
+                                overrides.params[axis.type] = (val === 'true');
+                            } else {
+                                overrides.params[axis.type] = val;
+                            }
+                        }
+                    });
+
+                    jobs.push(overrides);
+                });
+
+                return jobs;
+            }
+        }
+        window.plotManager = new PlotManager();
     </script>
 
     <!-- 5. Form Engine -->
@@ -2993,7 +3179,7 @@
                     list.innerHTML = names.map(name => `
                         <button onclick="window.app.insertWildcard('${name}')" class="w-full text-left px-2 py-1.5 hover:bg-white/5 rounded text-xs text-slate-300 hover:text-white transition-colors flex justify-between items-center group">
                             <span class="font-mono font-bold text-violet-400">__${name}__</span>
-                            <span class="text-[10px] text-slate-500 group-hover:text-slate-400">${wildcards[name].length} items</span>
+                            <span class="text-[10px] text-slate-500 group-hover:text-slate-400">${Array.isArray(wildcards[name]) ? wildcards[name].length : (wildcards[name].values?.length || 0)} items</span>
                         </button>
                     `).join('');
                 }
@@ -3568,13 +3754,13 @@
 
             async handleGenerate() {
                 const promptInput = document.getElementById('prompt-input');
-                const negInput = document.getElementById('negative-prompt-input'); // New
+                const negInput = document.getElementById('negative-prompt-input');
                 const modelSelect = document.getElementById('model-select');
 
                 let prompt = promptInput ? promptInput.value : '';
                 const originalPrompt = prompt; // Save Original
 
-                // Wildcard Parsing
+                // Wildcard Parsing (Base Prompt)
                 if (window.wildcardManager) prompt = window.wildcardManager.parsePrompt(prompt);
 
                 const negative = negInput ? negInput.value : '';
@@ -3583,10 +3769,11 @@
                 if (!prompt) return window.notifications.show("Please enter a prompt!", 'warning');
                 if (!model) return window.notifications.show("Please select a model!", 'warning');
 
-                // Combine Negative Prompt
-                if (negative && negative.trim().length > 0) {
-                    prompt = `${prompt} ### ${negative} `;
-                }
+                // Combine Negative Prompt Logic Helper
+                const combinePrompt = (p, n) => {
+                    if (n && n.trim().length > 0) return `${p} ### ${n} `;
+                    return p;
+                };
 
                 const btn = document.getElementById('btn-generate');
                 const originalText = btn.innerHTML;
@@ -3594,22 +3781,73 @@
 
                 try {
                     const formValues = window.formEngine.getValues(document.getElementById('dynamic-form-container'));
-                    const params = formValues.params;
-                    const res = await window.hordeClient.generateImage(prompt, params, model);
+                    let baseParams = formValues.params;
+                    const meta = formValues.meta;
+
+                    // X/Y/Z Plot Logic
+                    if (window.plotManager && window.plotManager.enabled && window.plotManager.axes.length > 0) {
+                        const plotJobs = window.plotManager.getCombinations(originalPrompt, baseParams, model, negative);
+
+                        if (plotJobs.length === 0) throw new Error("Plot enabled but no valid combinations generated.");
+
+                        window.notifications.show(`Starting X/Y/Z Plot: ${plotJobs.length} jobs`, 'info');
+
+                        // Batch Submission
+                        // Note: We'll submit them sequentially to the Queue Manager
+                        for (let i = 0; i < plotJobs.length; i++) {
+                            const jobConfig = plotJobs[i];
+
+                            // Determine final negative prompt 
+                            // If override has 'negative' set, use it. Otherwise use the global one.
+                            const finalNegative = jobConfig.negative !== null && jobConfig.negative !== undefined
+                                ? jobConfig.negative
+                                : negative;
+
+                            const finalPrompt = combinePrompt(jobConfig.prompt, finalNegative);
+
+                            // We submit to Horde
+                            const res = await window.hordeClient.generateImage(finalPrompt, jobConfig.params, jobConfig.model);
+
+                            if (jobConfig.params.dry_run || jobConfig.params.dry_run === 'true') {
+                                console.log(`Dry Run Plot ${i + 1}: ${res.kudos} kudos`);
+                                continue;
+                            }
+
+                            // Store Params
+                            const storedParams = {
+                                ...jobConfig.params,
+                                ...meta,
+                                original_prompt: originalPrompt,
+                                plot_info: jobConfig.meta.join(', ')
+                            };
+
+                            this.queue.addJob(res.id, finalPrompt, storedParams, jobConfig.model);
+                        }
+
+                        this.router.navigate('pending');
+                        window.notifications.show(`Plot Batch Started (${plotJobs.length} jobs)`, 'success');
+                        return; // End here
+                    }
+
+                    // Standard Generation
+                    prompt = combinePrompt(prompt, negative);
+
+                    const res = await window.hordeClient.generateImage(prompt, baseParams, model);
 
                     // Handle Dry Run (No Job ID)
-                    if (params.dry_run || params.dry_run === 'true') {
+                    if (baseParams.dry_run || baseParams.dry_run === 'true') {
                         window.notifications.show(`Dry Run Successful! Estimated Cost: ${res.kudos} kudos`, 'info');
                         return;
                     }
 
                     // Store BOTH public and private (user_only) params
                     // Add original_prompt to meta
-                    const storedParams = { ...params, ...formValues.meta, original_prompt: originalPrompt };
+                    const storedParams = { ...baseParams, ...meta, original_prompt: originalPrompt };
                     this.queue.addJob(res.id, prompt, storedParams, model);
                     this.router.navigate('pending');
                     window.notifications.show("Generation started...", 'success');
                 } catch (e) {
+                    console.error(e);
                     window.notifications.show(`Generation Error: ${e.message} `, 'error');
                 }
                 finally { btn.disabled = false; btn.innerHTML = originalText; }
@@ -3945,26 +4183,42 @@
                                     </div>` : ''}
                                     
                                     <div class="glass p-3 rounded-lg border-l-2 border-violet-500">
-                                        <div class="text-[10px] text-violet-400 uppercase tracking-wider mb-1">Final Prompt</div>
-                                        <div class="text-sm text-slate-200 leading-relaxed max-h-32 overflow-y-auto">${prompt}</div>
-                                    </div>
-                                    ${negative ? `
-                                    <div class="glass p-3 rounded-lg border-l-2 border-red-500">
-                                        <div class="text-[10px] text-red-400 uppercase tracking-wider mb-1">Negative</div>
-                                        <div class="text-xs text-slate-300 leading-relaxed">${negative}</div>
-                                    </div>` : ''}
-                                </div>
-
-                                <!-- Metadata Grid -->
-                                <div>
-                                    <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Generation Parameters</div>
-                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                                        ${metaGrid}
-                                    </div>
-                                    ${userOnlyKeys.length > 0 ? '<div class="mt-2 text-[10px] text-amber-500 flex items-center gap-1"><i class="fas fa-lock"></i> Highlighted parameters are marked as User Only</div>' : ''}
+                                    <div class="text-[10px] text-violet-400 uppercase tracking-wider mb-1">Final Prompt</div>
+                                    <div class="text-sm text-slate-200 leading-relaxed max-h-32 overflow-y-auto">${prompt}</div>
                                 </div>
                                 
-                                <!-- Personal Notes -->
+                                ${/* Original Prompt Display */ job.params.original_prompt && job.params.original_prompt !== prompt ? `
+                                <div class="glass bg-slate-900/50 p-3 rounded-lg border border-white/5 mb-2 mt-2">
+                                    <div class="text-[10px] text-slate-500 uppercase tracking-wider mb-1">Original Prompt</div>
+                                    <div class="text-xs text-slate-400 font-mono">${job.params.original_prompt}</div>
+                                </div>` : ''}
+
+                                ${negative ? `
+                                <div class="glass p-3 rounded-lg border-l-2 border-red-500 mt-2">
+                                    <div class="text-[10px] text-red-400 uppercase tracking-wider mb-1">Negative</div>
+                                    <div class="text-xs text-slate-300 leading-relaxed">${negative}</div>
+                                </div>` : ''}
+                            </div>
+
+                            ${/* Plot Info Banner */ job.params.plot_info ? `
+                            <div class="glass bg-slate-900/50 p-3 rounded-xl border border-amber-500/30 mb-4 flex items-center gap-3">
+                                <div class="w-8 h-8 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500"><i class="fas fa-chart-line"></i></div>
+                                <div>
+                                    <div class="text-[10px] font-bold text-amber-500 uppercase tracking-widest">X/Y/Z Plot</div>
+                                    <div class="text-xs text-amber-100 font-mono">${job.params.plot_info}</div>
+                                </div>
+                            </div>` : ''}
+
+                            <!-- Metadata Grid -->
+                            <div>
+                                <div class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3">Generation Parameters</div>
+                                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                                    ${metaGrid}
+                                </div>
+                                ${userOnlyKeys.length > 0 ? '<div class="mt-2 text-[10px] text-amber-500 flex items-center gap-1"><i class="fas fa-lock"></i> Highlighted parameters are marked as User Only</div>' : ''}
+                            </div>
+
+                                <!-- Preset Manager (Bottom) -->
                                 <div class="glass p-4 rounded-xl border border-white/5">
                                     <div class="flex justify-between items-center mb-2">
                                         <label class="text-xs font-bold text-slate-400 uppercase tracking-widest">Personal Notes</label>
