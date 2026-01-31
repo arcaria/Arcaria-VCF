@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## v0.0.10
+
+- **New Feature: X/Y/Z Plot System**:
+  - Added a comprehensive X/Y/Z Plot system to the sidebar.
+  - Supports iterating over any parameter (Steps, CFG, Model, etc.).
+  - **Prompt S/R** (Search/Replace): Iterate over prompts by replacing specific text.
+  - **Negative Prompt S/R**: Iterate over negative prompts search/replace.
+  - **Wildcard Expansion**: Automatically expands wildcards (e.g. `__colors__`) into all their values when used in a Plot Axis.
+  - **Batch Generation**: Generates combinations and submits them as a batch to the queue.
+  - **Job Details**: Updated to show "Original Prompt" vs "Final Prompt" and specific plot settings for each job.
+- **Wildcard Manager Improvements**:
+  - Fixed "undefined items" bug in the dashboard dropdown.
+  - Improved Wildcard parsing to correctly handle Prefixes and Suffixes during Plot expansion.
+- **UI/UX**:
+  - Added "X/Y/Z Plot" toggle and configuration panel to the sidebar.
+  - Improved Job Details modal metadata display.
+
 ## v0.0.9 (Wildcards & UI Polish)
 
 ### Added
@@ -154,8 +171,3 @@ All notable changes to this project will be documented in this file.
   - **Notifications**: Custom non-blocking toast system.
   - **Dialogs**: Custom Promise-based modal dialogs replacing native alerts.
   - **Validation**: Smart inputs with character counting and Negative Prompt separation (`###`).
-
-
-
-
-
