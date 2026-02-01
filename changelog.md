@@ -2,7 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
-## v0.0.11 (Queue and Gallery Improvements)
+## [v0.1.1] (Deep Search & Stability)
+
+### Added
+
+- **Raw JSON Request**:
+  - **Skips App logic**: Sends the request directly to the Horde API without processing it through the app's logic.
+  - **Pre-filled from Form**: The JSON request is pre-filled with the current form data.
+  - **Submit to Queue**: The request is submitted to the queue as usual.
+
+- **Deep Search System**:
+  - **Manager Filtering**: Added search bars to Wildcard, Style, and Preset manager sidebars.
+  - **Power Filtering**: Search goes beyond names—checking Prompts, Models, Negative Prompts, and even specific Form Keys.
+  - **Smart Highlighting**: Search results persisted via "Smart Update" logic, ensuring the filter state isn't lost when interacting with items.
+
+### Fixed
+
+- **Modal Stability**:
+  - **Smart Updates**: Fixed UI flickering when selecting items in managers. The interface now updates surgical parts of the DOM instead of re-rendering deeply.
+  - **Modal Locks**: Resolved a critical regression where closing a manager could leave the modal system in a locked state due to persistent inline styles.
+  - **Scrollbar Regressions**: Fixed "Missing Scrollbar" issues in Job Details and Gallery modals by enforcing a global `70vh` height constraint and flex layout on the modal container.
+- **Preset Manager**: Fixed syntax errors that caused the Form Engine to fail during specific load sequences.
+
+## [v0.0.11] (Queue and Gallery Improvements)
 
 - **Pending Module Sorting & Pagination**:
   - **Global Settings**: Added "Items Per Page" setting (affects both Queue and Gallery).
@@ -18,7 +40,7 @@ All notable changes to this project will be documented in this file.
   - **Dropdown UX**: Implemented robust click-outside-to-close logic for all dropdowns (Sort, Date, etc.) to improve usability.
   - **Integration**: Linked "Items Per Page" setting to the specific gallery pagination logic.
 
-## v0.0.10
+## [v0.0.10] (X/Y/Z Plot System)
 
 - **New Feature: X/Y/Z Plot System**:
   - Added a comprehensive X/Y/Z Plot system to the sidebar.
@@ -35,7 +57,7 @@ All notable changes to this project will be documented in this file.
   - Added "X/Y/Z Plot" toggle and configuration panel to the sidebar.
   - Improved Job Details modal metadata display.
 
-## v0.0.9 (Wildcards & UI Polish)
+## [v0.0.9] (Wildcards & UI Polish)
 
 ### Added
 
@@ -59,7 +81,7 @@ All notable changes to this project will be documented in this file.
 - **Visuals**: Updated Wildcard "Quick Apply" icon to a terminal style (`>_`).
 - **Performance**: Optimized list rendering for large wildcard collections.
 
-## v0.0.8 (Gallery Modal & Refinements)
+## [v0.0.8] (Gallery Modal & Refinements)
 
 ### Added
 
@@ -79,7 +101,7 @@ All notable changes to this project will be documented in this file.
 - **Pagination**: Moved pagination controls to the top of the gallery for easier access.
 - **Visuals**: Enhanced "Glass" styling for all gallery elements.
 
-## v0.0.7 (Gallery Overhaul)
+## [v0.0.7] (Gallery Overhaul)
 
 ### Added
 
@@ -95,7 +117,7 @@ All notable changes to this project will be documented in this file.
 - **Private Repo Access**: Fixed broken images for Private Repositories using "Blob Fetching" strategy.
 - **v6 Regression**: Fixed `clearBtn` reference error.
 
-## v0.0.6 (Fixes)
+## [v0.0.6] (Fixes)
 
 ### Fixed
 
@@ -187,4 +209,3 @@ All notable changes to this project will be documented in this file.
   - **Notifications**: Custom non-blocking toast system.
   - **Dialogs**: Custom Promise-based modal dialogs replacing native alerts.
   - **Validation**: Smart inputs with character counting and Negative Prompt separation (`###`).
-

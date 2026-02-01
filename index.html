@@ -362,7 +362,7 @@
             <div id="modal-raw-json"
                 class="fixed inset-0 z-[100] hidden items-center justify-center p-4 bg-black/80 backdrop-blur-sm matrix-theme font-mono">
                 <div
-                    class="w-full max-w-6xl h-[85vh] flex flex-col border border-green-500 shadow-[0_0_30px_rgba(0,255,0,0.2)] bg-black relative">
+                    class="w-full max-w-6xl h-[85vh] flex flex-col border border-green-500 shadow-[0_0_30px_rgba(0,255,0,0.2)] bg-black relative overflow-hidden">
                     <!-- Header -->
                     <div class="flex justify-between items-center p-4 border-b border-green-900 bg-green-900/10">
                         <div class="text-green-500 font-bold text-lg tracking-widest flex items-center gap-3">
@@ -959,7 +959,7 @@
         <!-- Content -->
         <div class="absolute inset-0 flex items-center justify-center p-4">
             <div
-                class="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col fade-in">
+                class="bg-slate-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col fade-in overflow-hidden">
                 <div
                     class="p-4 border-b border-white/5 flex justify-between items-center bg-slate-800/50 rounded-t-2xl">
                     <h3 class="text-lg font-bold text-white" id="modal-title">Modal Title</h3>
@@ -967,7 +967,7 @@
                         <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
-                <div id="modal-content" class="p-6 overflow-y-auto custom-scroll"></div>
+                <div id="modal-content" class="p-6 overflow-y-auto custom-scroll flex-grow min-h-0"></div>
             </div>
         </div>
     </div>
@@ -1009,7 +1009,7 @@
 
     <!-- 2. Settings Store -->
     <script>
-        const APP_VERSION = '0.01.1';
+        const APP_VERSION = '0.1.1';
 
         const DEFAULTS = {
             horde: { keys: [], activeKeyId: null, apiUrl: 'https://aihorde.net/api/v2' },
@@ -3129,7 +3129,7 @@
 
                 // 3. Render Modal
                 const html = `
-                    <div class="h-[70vh] flex flex-col">
+                    <div class="h-full flex flex-col">
                         <div class="flex-grow overflow-y-auto custom-scroll pr-2">
                              <div class="rounded-xl overflow-hidden border border-white/10 shadow-2xl relative group mb-6 bg-black/50">
                                  <!-- We use the same secure load trick for the large image, or reuse blob if we have it? -->
@@ -3178,6 +3178,18 @@
                 `;
 
                 this.openModal(filename, html);
+
+                // Fix double scrollbar for Gallery Modal
+                const content = document.getElementById('modal-content');
+                if (content) {
+                    content.removeAttribute('style'); // Clear artifacts
+                    content.classList.remove('overflow-y-auto');
+                    content.classList.add('overflow-hidden');
+                    // Enforce height for internal scrolling
+                    content.style.height = '70vh';
+                    content.style.display = 'flex';
+                    content.style.flexDirection = 'column';
+                }
 
                 // Load Image Securely into Modal
                 try {
@@ -3704,11 +3716,74 @@
                 this.toggleWildcardPicker(); // Close
             },
 
+            // --- Search Filters ---
+            filterWildcards(query) {
+                const term = query.toLowerCase();
+                const wildcards = window.wildcardManager.getAll();
+                document.querySelectorAll('#wc-sidebar-list button').forEach(btn => {
+                    const name = btn.dataset.name;
+                    const data = wildcards[name];
+                    const values = Array.isArray(data) ? data : (data.values || []);
+                    const prefix = !Array.isArray(data) && data.prefix ? data.prefix : '';
+                    const suffix = !Array.isArray(data) && data.suffix ? data.suffix : '';
+
+                    const match = name.toLowerCase().includes(term) ||
+                        values.some(v => v.toLowerCase().includes(term)) ||
+                        prefix.toLowerCase().includes(term) ||
+                        suffix.toLowerCase().includes(term);
+
+                    if (match) btn.classList.remove('hidden');
+                    else btn.classList.add('hidden');
+                });
+            },
+
+            filterStyles(query) {
+                const term = query.toLowerCase();
+                // Direct access assuming structure; might need check
+                const styles = window.styleManager.styles || [];
+                document.querySelectorAll('#style-sidebar-list button').forEach(btn => {
+                    const id = btn.dataset.id;
+                    const style = styles.find(s => s.id === id);
+                    if (!style) return;
+
+                    const match = style.name.toLowerCase().includes(term) ||
+                        (style.prompt && style.prompt.toLowerCase().includes(term));
+
+                    if (match) btn.classList.remove('hidden');
+                    else btn.classList.add('hidden');
+                });
+            },
+
+            filterPresets(query) {
+                const term = query.toLowerCase();
+                const presets = window.presetManager.getAll();
+                document.querySelectorAll('#preset-sidebar-list button').forEach(btn => {
+                    const id = btn.dataset.id;
+                    const preset = presets.find(p => p.id === id);
+                    if (!preset) return;
+
+                    // Deep search: Name, prompt, negative, model, keys
+                    let match = preset.name.toLowerCase().includes(term);
+                    if (!match && preset.data) {
+                        if (preset.data.prompt && preset.data.prompt.toLowerCase().includes(term)) match = true;
+                        if (!match && preset.data.negative && preset.data.negative.toLowerCase().includes(term)) match = true;
+                        if (!match && preset.data.model && preset.data.model.toLowerCase().includes(term)) match = true;
+                        if (!match && preset.data.form) {
+                            const formStr = JSON.stringify(preset.data.form).toLowerCase();
+                            if (formStr.includes(term)) match = true;
+                        }
+                    }
+
+                    if (match) btn.classList.remove('hidden');
+                    else btn.classList.add('hidden');
+                });
+            },
+
             openWildcardManager(selectedName = null) {
                 const wildcards = window.wildcardManager.getAll();
                 const names = Object.keys(wildcards).sort();
 
-                // Logic Fix: Handle '' (New) distinct from null (Auto-Select First)
+                // Logic: Handle '' (New) distinct from null (Auto-Select First)
                 let currentName = '';
                 if (selectedName === null) {
                     if (names.length > 0) currentName = names[0];
@@ -3716,27 +3791,85 @@
                     currentName = selectedName;
                 }
 
-                const currentData = wildcards[currentName] || {};
-                // Handle both Array (old) and Object (new)
-                const isArray = Array.isArray(currentData);
-                const currentValues = currentName ? (isArray ? currentData : (currentData.values || [])).join('\n') : '';
-                const currentPrefix = !isArray && currentData.prefix ? currentData.prefix : '';
-                const currentSuffix = !isArray && currentData.suffix ? currentData.suffix : '';
+                // --- Helper Phase: Generate Editor HTML ---
+                const getEditorHTML = (name) => {
+                    const currentData = wildcards[name] || {};
+                    const isArray = Array.isArray(currentData);
+                    const currentValues = name ? (isArray ? currentData : (currentData.values || [])).join('\n') : '';
+                    const currentPrefix = !isArray && currentData.prefix ? currentData.prefix : '';
+                    const currentSuffix = !isArray && currentData.suffix ? currentData.suffix : '';
 
+                    return `
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Name (Invocation: <span class="font-mono text-violet-400">__name__</span>)</label>
+                            <input type="text" id="wc-name" value="${name}" ${name && wildcards[name] ? 'disabled' : ''} placeholder="e.g. colors" class="glass-input w-full font-mono font-bold text-violet-300">
+                            ${name && wildcards[name] ? '<div class="text-[10px] text-slate-500 mt-1">To rename, delete and recreate.</div>' : ''}
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-2">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 mb-1">Prefix (Optional)</label>
+                                <input type="text" id="wc-prefix" value="${currentPrefix}" placeholder="e.g. (masterpiece:1.2), " class="glass-input w-full font-mono text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 mb-1">Suffix (Optional)</label>
+                                <input type="text" id="wc-suffix" value="${currentSuffix}" placeholder="e.g. , 4k, trending" class="glass-input w-full font-mono text-xs">
+                            </div>
+                        </div>
+
+                        <div class="flex-grow flex flex-col min-h-0">
+                            <label class="block text-xs font-bold text-slate-400 mb-1">Values (One per line)</label>
+                            <textarea id="wc-values" class="glass-input w-full flex-grow font-mono text-xs resize-none p-3 h-32" placeholder="blue\nred\ngreen">${currentValues}</textarea>
+                        </div>
+                        <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded-xl">
+                            ${name && wildcards[name] ?
+                            `<button onclick="window.app.deleteWildcardManager('${name}')" class="text-xs text-red-400 hover:text-red-300 px-3 py-1"><i class="fas fa-trash mr-1"></i> Delete</button>` :
+                            '<div></div>'
+                        }
+                            <button onclick="window.app.saveWildcardManager()" class="glass-btn bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-1.5 text-xs font-bold"><i class="fas fa-save mr-1"></i> Save Wildcard</button>
+                        </div>
+                    `;
+                };
+
+                // --- Smart Update Check ---
+                const wrapper = document.getElementById('wildcard-manager-wrapper');
+                const modal = document.getElementById('generic-modal');
+                if (wrapper && modal && !modal.classList.contains('hidden')) {
+                    // Update Editor
+                    document.getElementById('wc-editor-container').innerHTML = getEditorHTML(currentName);
+
+                    // Update Sidebar Highlight Only
+                    // Update Sidebar Highlight Only
+                    document.querySelectorAll('#wc-sidebar-list button').forEach(btn => {
+                        if (btn.dataset.name === currentName) {
+                            btn.classList.remove('text-slate-400', 'hover:bg-white/5', 'hover:text-white');
+                            btn.classList.add('bg-violet-600', 'text-white');
+                        } else {
+                            btn.classList.remove('bg-violet-600', 'text-white');
+                            btn.classList.add('text-slate-400', 'hover:bg-white/5', 'hover:text-white');
+                        }
+                    });
+                    return;
+                }
+
+                // --- Initial Render ---
                 const html = `
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 h-full"> <!-- Full height of container -->
-            <!-- Sidebar List -->
-            <div class="glass bg-slate-900/30 rounded-xl flex flex-col overflow-hidden border border-white/5">
-                <div class="p-2 border-b border-white/5 flex justify-between items-center">
-                    <span class="text-xs font-bold text-slate-400 uppercase">Wildcards</span>
-                    <button onclick="window.app.openWildcardManager('')" class="text-xs glass-btn px-2 py-1 bg-violet-600 hover:bg-violet-500 text-white"><i class="fas fa-plus"></i> New</button>
-                </div>
-                <!-- Sidebar internal scroll -->
-                <div class="overflow-y-auto custom-scroll flex-grow p-1 space-y-0.5">
+                    <div id="wildcard-manager-wrapper" class="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
+                        <!-- Sidebar List -->
+                        <div class="glass bg-slate-900/30 rounded-xl flex flex-col overflow-hidden border border-white/5">
+                            <div class="p-2 border-b border-white/5 flex flex-col gap-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold text-slate-400 uppercase">Wildcards</span>
+                                    <button onclick="window.app.openWildcardManager('')" class="text-xs glass-btn px-2 py-1 bg-violet-600 hover:bg-violet-500 text-white"><i class="fas fa-plus"></i> New</button>
+                                </div>
+                                <input type="text" placeholder="Search..." oninput="window.app.filterWildcards(this.value)" class="glass-input w-full text-xs px-2 py-1">
+                            </div>
+                            <!-- Sidebar internal scroll -->
+                            <div id="wc-sidebar-list" class="overflow-y-auto custom-scroll flex-grow p-1 space-y-0.5">
                                 ${names.map(name => {
                     const count = Array.isArray(wildcards[name]) ? wildcards[name].length : (wildcards[name].values?.length || 0);
                     return `
-                                    <button onclick="window.app.openWildcardManager('${name}')" class="w-full text-left px-3 py-2 rounded text-xs transition-colors flex justify-between items-center ${name === currentName ? 'bg-violet-600 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}">
+                                    <button data-name="${name}" onclick="window.app.openWildcardManager('${name}')" class="w-full text-left px-3 py-2 rounded text-xs transition-colors flex justify-between items-center ${name === currentName ? 'bg-violet-600 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}">
                                         <span class="truncate font-mono font-bold">${name}</span>
                                         <span class="text-[10px] opacity-50">${count}</span>
                                     </button>
@@ -3746,36 +3879,8 @@
                         </div>
 
                         <!-- Editor -->
-                        <div class="md:col-span-2 flex flex-col gap-3">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-400 mb-1">Name (Invocation: <span class="font-mono text-violet-400">__name__</span>)</label>
-                                <input type="text" id="wc-name" value="${currentName}" ${currentName && wildcards[currentName] ? 'disabled' : ''} placeholder="e.g. colors" class="glass-input w-full font-mono font-bold text-violet-300">
-                                ${currentName && wildcards[currentName] ? '<div class="text-[10px] text-slate-500 mt-1">To rename, delete and recreate.</div>' : ''}
-                            </div>
-                            
-                            <!-- Prefix / Suffix -->
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-400 mb-1">Prefix (Optional)</label>
-                                    <input type="text" id="wc-prefix" value="${currentPrefix}" placeholder="e.g. (masterpiece:1.2), " class="glass-input w-full font-mono text-xs">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-400 mb-1">Suffix (Optional)</label>
-                                    <input type="text" id="wc-suffix" value="${currentSuffix}" placeholder="e.g. , 4k, trending" class="glass-input w-full font-mono text-xs">
-                                </div>
-                            </div>
-
-                            <div class="flex-grow flex flex-col min-h-0">
-                                <label class="block text-xs font-bold text-slate-400 mb-1">Values (One per line)</label>
-                                <textarea id="wc-values" class="glass-input w-full flex-grow font-mono text-xs resize-none p-3 h-32" placeholder="blue\nred\ngreen">${currentValues}</textarea>
-                            </div>
-                            <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded-xl">
-                                ${currentName && wildcards[currentName] ?
-                        `<button onclick="window.app.deleteWildcardManager('${currentName}')" class="text-xs text-red-400 hover:text-red-300 px-3 py-1"><i class="fas fa-trash mr-1"></i> Delete</button>` :
-                        '<div></div>'
-                    }
-                                <button onclick="window.app.saveWildcardManager()" class="glass-btn bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-1.5 text-xs font-bold"><i class="fas fa-save mr-1"></i> Save Wildcard</button>
-                            </div>
+                        <div id="wc-editor-container" class="md:col-span-2 flex flex-col gap-3 h-full overflow-hidden">
+                            ${getEditorHTML(currentName)}
                         </div>
                     </div>
                 `;
@@ -3783,10 +3888,13 @@
                 this.openModal('Wildcard Manager', html);
 
                 // CSS overrides for this modal to fix scrolling
+                // CSS overrides for this modal to fix scrolling
                 const content = document.getElementById('modal-content');
                 if (content) {
+                    content.removeAttribute('style'); // CRITICAL: Reset any stuck styles
                     content.classList.remove('overflow-y-auto');
                     content.classList.add('overflow-hidden');
+                    // Use fixed viewport height to ensure flex scrolling works
                     content.style.height = '70vh';
                     content.style.display = 'flex';
                     content.style.flexDirection = 'column';
@@ -3842,31 +3950,14 @@
                     currentId = selectedId;
                 }
 
-                const currentStyle = currentId ? styles.find(s => s.id === currentId) : null;
-                const nameVal = currentStyle ? currentStyle.name : '';
-                const promptVal = currentStyle ? currentStyle.prompt : '';
+                // --- Helper Phase: Generate Editor HTML ---
+                const getEditorHTML = (id) => {
+                    const currentStyle = id ? styles.find(s => s.id === id) : null;
+                    const nameVal = currentStyle ? currentStyle.name : '';
+                    const promptVal = currentStyle ? currentStyle.prompt : '';
 
-                const html = `
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 h-[400px]">
-                        <!-- Sidebar List -->
-                        <div class="glass bg-slate-900/30 rounded-xl flex flex-col overflow-hidden border border-white/5">
-                            <div class="p-2 border-b border-white/5 flex justify-between items-center">
-                                <span class="text-xs font-bold text-slate-400 uppercase">Styles</span>
-                                <button onclick="window.app.openStylesModal('')" class="text-xs glass-btn px-2 py-1 bg-violet-600 hover:bg-violet-500 text-white"><i class="fas fa-plus"></i> New</button>
-                            </div>
-                            <div class="overflow-y-auto custom-scroll flex-grow p-1 space-y-0.5">
-                                ${styles.map(s => `
-                                    <button onclick="window.app.openStylesModal('${s.id}')" class="w-full text-left px-3 py-2 rounded text-xs transition-colors flex justify-between items-center ${s.id === currentId ? 'bg-violet-600 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}">
-                                        <span class="truncate font-bold">${s.name}</span>
-                                    </button>
-                                `).join('')}
-                                ${styles.length === 0 ? '<div class="p-4 text-center text-xs text-slate-600 italic">No styles yet.</div>' : ''}
-                            </div>
-                        </div>
-
-                        <!-- Editor -->
-                        <div class="md:col-span-2 flex flex-col gap-3">
-                             <input type="hidden" id="style-id" value="${currentId || ''}">
+                    return `
+                             <input type="hidden" id="style-id" value="${id || ''}">
                              <div>
                                 <label class="block text-xs font-bold text-slate-400 mb-1">Style Name</label>
                                 <input type="text" id="style-name" value="${nameVal}" placeholder="e.g. Cinematic" class="glass-input w-full font-bold text-violet-300">
@@ -3878,16 +3969,76 @@
                             <div class="flex justify-between items-center bg-slate-900/50 p-2 rounded-xl">
                                 <div class="flex gap-2">
                                      ${currentStyle ?
-                        `<button onclick="window.app.deleteStyleManager('${currentId}')" class="text-xs text-red-400 hover:text-red-300 px-3 py-1"><i class="fas fa-trash mr-1"></i> Delete</button>
-                                     <button onclick="window.app.applyStyle('${currentId}')" class="text-xs glass-btn bg-slate-700 hover:bg-slate-600 text-emerald-400 px-3 py-1"><i class="fas fa-check mr-1"></i> Apply</button>`
-                        : '<div></div>'}
+                            `<button onclick="window.app.deleteStyleManager('${id}')" class="text-xs text-red-400 hover:text-red-300 px-3 py-1"><i class="fas fa-trash mr-1"></i> Delete</button>
+                                     <button onclick="window.app.applyStyle('${id}')" class="text-xs glass-btn bg-slate-700 hover:bg-slate-600 text-emerald-400 px-3 py-1"><i class="fas fa-check mr-1"></i> Apply</button>`
+                            : '<div></div>'}
                                 </div>
                                 <button onclick="window.app.saveStyleManager()" class="glass-btn bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-1.5 text-xs font-bold"><i class="fas fa-save mr-1"></i> Save Style</button>
                             </div>
+                    `;
+                }
+
+                // --- Smart Update Check ---
+                const wrapper = document.getElementById('style-manager-wrapper');
+                const modal = document.getElementById('generic-modal');
+                if (wrapper && modal && !modal.classList.contains('hidden')) {
+                    // Update Editor
+                    document.getElementById('style-editor-container').innerHTML = getEditorHTML(currentId);
+
+                    // Update Sidebar
+                    // Update Sidebar
+                    document.querySelectorAll('#style-sidebar-list button').forEach(btn => {
+                        if (btn.dataset.id === currentId) {
+                            btn.classList.remove('text-slate-400', 'hover:bg-white/5', 'hover:text-white');
+                            btn.classList.add('bg-violet-600', 'text-white');
+                        } else {
+                            btn.classList.remove('bg-violet-600', 'text-white');
+                            btn.classList.add('text-slate-400', 'hover:bg-white/5', 'hover:text-white');
+                        }
+                    });
+                    return;
+                }
+
+                // --- Initial Render ---
+                const html = `
+                    <div id="style-manager-wrapper" class="grid grid-cols-1 md:grid-cols-3 gap-4 h-full">
+                        <!-- Sidebar List -->
+                        <div class="glass bg-slate-900/30 rounded-xl flex flex-col overflow-hidden border border-white/5">
+                            <div class="p-2 border-b border-white/5 flex flex-col gap-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold text-slate-400 uppercase">Styles</span>
+                                    <button onclick="window.app.openStylesModal('')" class="text-xs glass-btn px-2 py-1 bg-violet-600 hover:bg-violet-500 text-white"><i class="fas fa-plus"></i> New</button>
+                                </div>
+                                <input type="text" placeholder="Search..." oninput="window.app.filterStyles(this.value)" class="glass-input w-full text-xs px-2 py-1">
+                            </div>
+                            <div id="style-sidebar-list" class="overflow-y-auto custom-scroll flex-grow p-1 space-y-0.5">
+                                ${styles.map(s => `
+                                    <button data-id="${s.id}" onclick="window.app.openStylesModal('${s.id}')" class="w-full text-left px-3 py-2 rounded text-xs transition-colors flex justify-between items-center ${s.id === currentId ? 'bg-violet-600 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}">
+                                        <span class="truncate font-bold">${s.name}</span>
+                                    </button>
+                                `).join('')}
+                                ${styles.length === 0 ? '<div class="p-4 text-center text-xs text-slate-600 italic">No styles yet.</div>' : ''}
+                            </div>
+                        </div>
+
+                        <!-- Editor -->
+                        <div id="style-editor-container" class="md:col-span-2 flex flex-col gap-3 h-full overflow-hidden">
+                             ${getEditorHTML(currentId)}
                         </div>
                     </div>
                 `;
                 this.openModal('Style Manager', html);
+
+                // CSS overrides for this modal to fix scrolling
+                const content = document.getElementById('modal-content');
+                if (content) {
+                    content.removeAttribute('style'); // CRITICAL: Reset any stuck styles
+                    content.classList.remove('overflow-y-auto');
+                    content.classList.add('overflow-hidden');
+                    content.style.height = '70vh';
+                    content.style.display = 'flex';
+                    content.style.flexDirection = 'column';
+                }
             },
 
             saveStyleManager() {
@@ -3934,35 +4085,16 @@
                     currentId = selectedId;
                 }
 
-                const currentPreset = currentId ? presets.find(p => p.id === currentId) : null;
-                const nameVal = currentPreset ? currentPreset.name : '';
-                const promptVal = currentPreset && currentPreset.data ? (currentPreset.data.prompt || '') : '';
-                const negVal = currentPreset && currentPreset.data ? (currentPreset.data.negative || '') : '';
-                const modelVal = currentPreset && currentPreset.data ? (currentPreset.data.model || '') : '';
+                // --- Helper Phase: Generate Editor HTML & Logic ---
+                const renderEditor = (id) => {
+                    const currentPreset = id ? presets.find(p => p.id === id) : null;
+                    const nameVal = currentPreset ? currentPreset.name : '';
+                    const promptVal = currentPreset && currentPreset.data ? (currentPreset.data.prompt || '') : '';
+                    const negVal = currentPreset && currentPreset.data ? (currentPreset.data.negative || '') : '';
+                    const modelVal = currentPreset && currentPreset.data ? (currentPreset.data.model || '') : '';
 
-
-                const html = `
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 h-full"> <!-- Full height of container -->
-                        <!-- Sidebar List -->
-                        <div class="glass bg-slate-900/30 rounded-xl flex flex-col overflow-hidden border border-white/5">
-                            <div class="p-2 border-b border-white/5 flex justify-between items-center">
-                                <span class="text-xs font-bold text-slate-400 uppercase">Presets</span>
-                                <button onclick="window.app.openPresetsModal('')" class="text-xs glass-btn px-2 py-1 bg-violet-600 hover:bg-violet-500 text-white"><i class="fas fa-plus"></i> New</button>
-                            </div>
-                            <div class="overflow-y-auto custom-scroll flex-grow p-1 space-y-0.5">
-                                ${presets.map(p => `
-                                    <button onclick="window.app.openPresetsModal('${p.id}')" class="w-full text-left px-3 py-2 rounded text-xs transition-colors flex justify-between items-center ${p.id === currentId ? 'bg-violet-600 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}">
-                                        <div class="truncate font-bold">${p.name}</div>
-                                        <div class="text-[10px] opacity-50">${new Date(p.date).toLocaleDateString()}</div>
-                                    </button>
-                                `).join('')}
-                                ${presets.length === 0 ? '<div class="p-4 text-center text-xs text-slate-600 italic">No presets yet.</div>' : ''}
-                            </div>
-                        </div>
-
-                        <!-- Editor -->
-                        <div class="md:col-span-2 flex flex-col gap-3 h-full overflow-hidden">
-                             <input type="hidden" id="preset-id" value="${currentId || ''}">
+                    const html = `
+                             <input type="hidden" id="preset-id" value="${id || ''}">
                              
                              <!-- Header Inputs & Actions -->
                              <div class="flex flex-col gap-2 p-1 flex-shrink-0">
@@ -3972,12 +4104,12 @@
                                         <div class="flex gap-2">
                                             <button onclick="window.app.savePresetManager()" class="glass-btn bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 text-xs font-bold"><i class="fas fa-save mr-1"></i> Save</button>
                                             ${currentPreset ?
-                        `<button onclick="window.app.loadPresetManager('${currentId}')" class="glass-btn bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 text-xs font-bold"><i class="fas fa-upload mr-1"></i> Load</button>` : ''}
+                            `<button onclick="window.app.loadPresetManager('${id}')" class="glass-btn bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 text-xs font-bold"><i class="fas fa-upload mr-1"></i> Load</button>` : ''}
                                         </div>
                                         <div class="flex gap-2">
-                                            ${!currentId ? `<button onclick="window.app.fillPresetFromCurrent()" class="text-xs glass-btn text-blue-300 hover:text-white px-2 py-1"><i class="fas fa-copy mr-1"></i> Copy Current</button>` : ''}
+                                            ${!id ? `<button onclick="window.app.fillPresetFromCurrent()" class="text-xs glass-btn text-blue-300 hover:text-white px-2 py-1"><i class="fas fa-copy mr-1"></i> Copy Current</button>` : ''}
                                             ${currentPreset ?
-                        `<button onclick="window.app.deletePresetManager('${currentId}')" class="text-xs text-red-400 hover:text-red-300 px-2 py-1"><i class="fas fa-trash"></i></button>` : ''}
+                            `<button onclick="window.app.deletePresetManager('${id}')" class="text-xs text-red-400 hover:text-red-300 px-2 py-1"><i class="fas fa-trash"></i></button>` : ''}
                                         </div>
                                      </div>
                                 </div>
@@ -4013,6 +4145,82 @@
                                     <div id="preset-dynamic-form" class="pb-4"></div>
                                 </div>
                             </div>
+                    `;
+
+                    // 1. Inject HTML
+                    document.getElementById('preset-editor-container').innerHTML = html;
+
+                    // 2. Post-Render Logic
+                    // Populate Model Select
+                    const modelSelect = document.getElementById('preset-model');
+                    const mainSelect = document.getElementById('model-select');
+                    if (mainSelect && modelSelect) {
+                        modelSelect.innerHTML = mainSelect.innerHTML;
+                        if (modelVal) modelSelect.value = modelVal;
+                    }
+
+                    // Render Dynamic Form
+                    const formContainer = document.getElementById('preset-dynamic-form');
+                    if (formContainer) {
+                        try {
+                            const stored = localStorage.getItem('AG_HORDE_FORM_SCHEMA');
+                            const schema = stored ? JSON.parse(stored) : window.DEFAULT_FORM_CONFIG;
+                            window.formEngine.render(schema, formContainer);
+
+                            // Set Values if editing
+                            if (currentPreset && currentPreset.data && currentPreset.data.form) {
+                                window.formEngine.setValues(formContainer, currentPreset.data.form);
+                            }
+                        } catch (e) { console.error("Preset Form Render Error", e); }
+                    }
+                }
+
+                // --- Smart Update Check ---
+                const wrapper = document.getElementById('preset-manager-wrapper');
+                const modal = document.getElementById('generic-modal');
+                if (wrapper && modal && !modal.classList.contains('hidden')) {
+                    renderEditor(currentId);
+
+                    // Update Sidebar
+                    // Update Sidebar
+                    document.querySelectorAll('#preset-sidebar-list button').forEach(btn => {
+                        if (btn.dataset.id === currentId) {
+                            btn.classList.remove('text-slate-400', 'hover:bg-white/5', 'hover:text-white');
+                            btn.classList.add('bg-violet-600', 'text-white');
+                        } else {
+                            btn.classList.remove('bg-violet-600', 'text-white');
+                            btn.classList.add('text-slate-400', 'hover:bg-white/5', 'hover:text-white');
+                        }
+                    });
+                    return;
+                }
+
+                // --- Initial Render ---
+                const html = `
+                    <div id="preset-manager-wrapper" class="grid grid-cols-1 md:grid-cols-3 gap-4 h-full"> <!-- Full height of container -->
+                        <!-- Sidebar List -->
+                        <div class="glass bg-slate-900/30 rounded-xl flex flex-col overflow-hidden border border-white/5">
+                            <div class="p-2 border-b border-white/5 flex flex-col gap-2">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-xs font-bold text-slate-400 uppercase">Presets</span>
+                                    <button onclick="window.app.openPresetsModal('')" class="text-xs glass-btn px-2 py-1 bg-violet-600 hover:bg-violet-500 text-white"><i class="fas fa-plus"></i> New</button>
+                                </div>
+                                <input type="text" placeholder="Search..." oninput="window.app.filterPresets(this.value)" class="glass-input w-full text-xs px-2 py-1">
+                            </div>
+                            <div id="preset-sidebar-list" class="overflow-y-auto custom-scroll flex-grow p-1 space-y-0.5">
+                                ${presets.map(p => `
+                                    <button data-id="${p.id}" onclick="window.app.openPresetsModal('${p.id}')" class="w-full text-left px-3 py-2 rounded text-xs transition-colors flex justify-between items-center ${p.id === currentId ? 'bg-violet-600 text-white' : 'text-slate-400 hover:bg-white/5 hover:text-white'}">
+                                        <div class="truncate font-bold">${p.name}</div>
+                                        <div class="text-[10px] opacity-50">${new Date(p.date).toLocaleDateString()}</div>
+                                    </button>
+                                `).join('')}
+                                ${presets.length === 0 ? '<div class="p-4 text-center text-xs text-slate-600 italic">No presets yet.</div>' : ''}
+                            </div>
+                        </div>
+
+                        <!-- Editor -->
+                        <div id="preset-editor-container" class="md:col-span-2 flex flex-col gap-3 h-full overflow-hidden">
+                             <!-- Content injected by renderEditor -->
                         </div>
                     </div>
                 `;
@@ -4021,38 +4229,18 @@
 
                 // CSS overrides for this modal to fix scrolling
                 const content = document.getElementById('modal-content');
-                content.classList.remove('overflow-y-auto');
-                content.classList.add('overflow-hidden');
-                content.style.height = '70vh';
-                content.style.display = 'flex';
-                content.style.flexDirection = 'column';
-
-                // Post-Render Logic:
-                // 1. Populate Model Select
-                const modelSelect = document.getElementById('preset-model');
-                // We'll trust the cache from hordeClient or fallback to simple update if possible, 
-                // but getting the full list usually requires async. 
-                // Let's grab the options from the main UI's select if available to avoid refetch?
-                const mainSelect = document.getElementById('model-select');
-                if (mainSelect && modelSelect) {
-                    modelSelect.innerHTML = mainSelect.innerHTML;
-                    if (modelVal) modelSelect.value = modelVal;
+                if (content) {
+                    content.removeAttribute('style'); // CRITICAL: Reset any stuck styles
+                    content.classList.remove('overflow-y-auto');
+                    content.classList.add('overflow-hidden');
+                    // Use fixed viewport height to ensure flex scrolling works
+                    content.style.height = '70vh';
+                    content.style.display = 'flex';
+                    content.style.flexDirection = 'column';
                 }
 
-                // 2. Render Dynamic Form
-                const formContainer = document.getElementById('preset-dynamic-form');
-                if (formContainer) {
-                    try {
-                        const stored = localStorage.getItem('AG_HORDE_FORM_SCHEMA');
-                        const schema = stored ? JSON.parse(stored) : window.DEFAULT_FORM_CONFIG;
-                        window.formEngine.render(schema, formContainer);
-
-                        // Set Values if editing
-                        if (currentPreset && currentPreset.data && currentPreset.data.form) {
-                            window.formEngine.setValues(formContainer, currentPreset.data.form);
-                        }
-                    } catch (e) { console.error("Preset Form Render Error", e); }
-                }
+                // Initial Editor Render
+                renderEditor(currentId);
             },
 
             savePresetManager() {
@@ -4695,7 +4883,7 @@
                 }).join('');
 
                 const html = `
-                    <div class="h-[70vh] flex flex-col">
+                    <div class="h-full flex flex-col">
                         <!-- Header -->
                         <div class="mb-4 space-y-3">
                             <div class="flex justify-between items-start">
@@ -4833,6 +5021,18 @@
                     </div>
                 `;
                 this.openModal('Job Details', html);
+
+                // Fix double scrollbar by disabling scrolling on the wrapper and using the inner scroll
+                const content = document.getElementById('modal-content');
+                if (content) {
+                    content.removeAttribute('style'); // CRITICAL: Reset any stuck styles
+                    content.classList.remove('overflow-y-auto');
+                    content.classList.add('overflow-hidden');
+                    // Enforce height for internal scrolling
+                    content.style.height = '70vh';
+                    content.style.display = 'flex';
+                    content.style.flexDirection = 'column';
+                }
             },
 
             switchModalTab(tab) {
@@ -4994,6 +5194,15 @@
                 // Standard Top Level
                 ['prompt', 'params', 'nsfw', 'censor_nsfw', 'trusted_workers', 'models', 'r2', 'dry_run'].forEach(k => allKeys.add(k));
 
+                // Standard Params (Whitelist)
+                [
+                    'n', 'steps', 'cfg_scale', 'sampler_name', 'width', 'height', 'seed', 'seed_variation',
+                    'karras', 'denoising_strength', 'tiling', 'hires_fix', 'clip_skip', 'control_type',
+                    'image_is_control', 'facefixer_strength', 'loras', 'tis', 'return_control_map', 'post_processing',
+                    'hires_fix_denoising_strength', 'extra_texts', 'workflow', 'transparent', 'validated_backends',
+                    'extra_slow_workers', 'allow_downgrade', 'style'
+                ].forEach(k => allKeys.add(k));
+
                 // Dynamic Keys
                 formConfig.forEach(group => {
                     group.fields?.forEach(field => allKeys.add(field.id));
@@ -5003,7 +5212,7 @@
                 const topLevelPresent = new Set(Object.keys(currentObj));
                 const paramsPresent = new Set(Object.keys(currentObj.params || {}));
 
-                const TOP_LEVEL_HINTS = new Set(['nsfw', 'censor_nsfw', 'trusted_workers', 'slow_workers', 'workers', 'worker_blacklist', 'models', 'source_image', 'source_processing', 'source_mask', 'r2', 'shared', 'replacement_filter', 'dry_run', 'proxied_account', 'disable_batching', 'webhook', 'blacklisted_workers', 'prompt', 'params']);
+                const TOP_LEVEL_HINTS = new Set(['nsfw', 'censor_nsfw', 'trusted_workers', 'slow_workers', 'workers', 'worker_blacklist', 'models', 'source_image', 'source_processing', 'source_mask', 'r2', 'shared', 'replacement_filter', 'dry_run', 'proxied_account', 'disable_batching', 'webhook', 'blacklisted_workers', 'prompt', 'params', 'allow_downgrade', 'extra_slow_workers', 'validated_backends']);
 
                 container.innerHTML = '';
 
@@ -5110,4 +5319,3 @@
 </body>
 
 </html>
-
