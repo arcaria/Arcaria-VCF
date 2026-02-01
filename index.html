@@ -877,7 +877,7 @@
                         </div>
                     </details>
 
-                    <!-- 2. GitHub Repos -->
+                    <!-- 2. Storage Profiles -->
                     <details class="group glass rounded-xl overflow-hidden mb-4">
                         <summary
                             class="flex justify-between items-center p-4 cursor-pointer list-none bg-slate-800/20 hover:bg-slate-800/40 transition-colors">
@@ -885,14 +885,14 @@
                                 class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
                                 <i
                                     class="fas fa-chevron-right text-xs text-slate-500 transition-transform group-open:rotate-90"></i>
-                                GitHub Galleries
+                                Storage Profiles
                             </h3>
-                            <button onclick="event.preventDefault(); window.app.openAddGitHubModal()"
+                            <button onclick="event.preventDefault(); window.app.openAddStorageModal()"
                                 class="text-xs text-emerald-400 hover:text-white flex items-center gap-1 glass-btn px-2 py-1"><i
                                     class="fas fa-plus"></i> Add</button>
                         </summary>
                         <div class="p-4 border-t border-white/5 space-y-3">
-                            <div id="settings-github-list" class="space-y-3"></div>
+                            <div id="settings-storage-list" class="space-y-3"></div>
                         </div>
                     </details>
 
@@ -1009,7 +1009,7 @@
 
     <!-- 2. Settings Store -->
     <script>
-        const APP_VERSION = '0.1.1';
+        const APP_VERSION = '0.1.2'; // Automated Version Bump
 
         const DEFAULTS = {
             horde: { keys: [], activeKeyId: null, apiUrl: 'https://aihorde.net/api/v2' },
@@ -1019,8 +1019,424 @@
             wildcards: {} // { "name": ["val1", "val2"] }
         };
 
+        // --- Storage System ---
+
+        class StorageAdapter {
+            constructor(config) { this.config = config; }
+            async init() { return true; }
+            async list(path) { throw new Error("Not implemented"); } // Returns { name, path, type: 'file'|'folder', url?, date? }
+            async read(path) { throw new Error("Not implemented"); } // Returns Blob or JSON
+            async write(path, content, type) { throw new Error("Not implemented"); }
+            async delete(path) { throw new Error("Not implemented"); }
+        }
+
+        // --- System DB for Handle Persistence ---
+        class LocalHandleStore {
+            constructor() {
+                this.dbName = 'AntigravitySystem';
+                this.storeName = 'handles';
+                this.db = null;
+            }
+            async _open() {
+                if (this.db) return this.db;
+                return new Promise((resolve, reject) => {
+                    const req = indexedDB.open(this.dbName, 1);
+                    req.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            db.createObjectStore(this.storeName);
+                        }
+                    };
+                    req.onsuccess = () => { this.db = req.result; resolve(this.db); };
+                    req.onerror = () => reject(req.error);
+                });
+            }
+            async get(id) {
+                await this._open();
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(this.storeName, 'readonly');
+                    const req = tx.objectStore(this.storeName).get(id);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error);
+                });
+            }
+            async set(id, handle) {
+                await this._open();
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(this.storeName, 'readwrite');
+                    tx.objectStore(this.storeName).put(handle, id);
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
+            }
+        }
+        window.localHandleStore = new LocalHandleStore();
+
+        class GitHubAdapter extends StorageAdapter {
+            constructor(config) {
+                super(config); // { token, repo, branch? }
+                const parts = config.repo.split('/');
+                this.owner = parts[0];
+                this.repo = parts[1];
+                this.baseUrl = `https://api.github.com/repos/${this.owner}/${this.repo}`;
+            }
+
+            async list(path = '') {
+                // Using Tree API for recursive speed (or synchronous contents if flat? Tree is better for deep)
+                // For gallery, we often want specific folders.
+                // Let's use Contents API for folder listing to support "browsing" or Tree for "all files".
+                // Current gallery uses Tree for everything. Adapting to that.
+                const branch = 'main'; // TODO: Configurable?
+                // Fetch latest commit -> tree
+                try {
+                    const refRes = await fetch(`${this.baseUrl}/commits/${branch}`, {
+                        headers: { 'Authorization': `token ${this.config.token}` }
+                    });
+                    if (!refRes.ok) throw new Error("Repo/Branch not found");
+                    const ref = await refRes.json();
+
+                    const treeRes = await fetch(`${this.baseUrl}/git/trees/${ref.commit.tree.sha}?recursive=1`, {
+                        headers: { 'Authorization': `token ${this.config.token}` }
+                    });
+                    const tree = await treeRes.json();
+
+                    // Filter and Map
+                    return tree.tree.filter(f => f.type === 'blob').map(f => ({
+                        name: f.path.split('/').pop(),
+                        path: f.path, // Full path
+                        folder: f.path.includes('/') ? f.path.substring(0, f.path.lastIndexOf('/')) : '',
+                        type: 'file',
+                        // GitHub raw URL
+                        url: `https://raw.githubusercontent.com/${this.owner}/${this.repo}/${branch}/${f.path}`,
+                        size: f.size
+                    }));
+                } catch (e) {
+                    console.error("GitHub List Error", e);
+                    return [];
+                }
+            }
+
+            async read(path) {
+                const url = `https://api.github.com/repos/${this.owner}/${this.repo}/contents/${path}`;
+                const res = await fetch(url, {
+                    headers: { 'Authorization': `token ${this.config.token}`, 'Accept': 'application/vnd.github.raw' }
+                });
+                if (!res.ok) throw new Error("File read failed");
+                return await res.blob();
+            }
+
+            async write(path, content, type = 'text/plain') {
+                // GitHub API requires Base64 for Blobs AND Strings (JSON)
+                let contentEncoded = content;
+                const encoding = 'base64'; // GitHub only supports base64
+
+                if (content instanceof Blob) {
+                    const buf = await content.arrayBuffer();
+                    const bytes = new Uint8Array(buf);
+                    let binary = '';
+                    for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+                    contentEncoded = btoa(binary);
+                } else {
+                    // String (JSON or Text)
+                    // Must encode Unicode strings correctly
+                    contentEncoded = btoa(unescape(encodeURIComponent(content)));
+                }
+
+                // Check if file exists (to get SHA for update)
+                let sha = null;
+                try {
+                    const check = await fetch(`${this.baseUrl}/contents/${path}`, {
+                        headers: { 'Authorization': `token ${this.config.token}` }
+                    });
+                    if (check.ok) {
+                        const info = await check.json();
+                        sha = info.sha;
+                    }
+                } catch (e) { }
+
+                const body = {
+                    message: `Upload via Antigravity ${path}`,
+                    content: contentEncoded,
+                    encoding: encoding
+                };
+                if (sha) body.sha = sha;
+
+                const res = await fetch(`${this.baseUrl}/contents/${path}`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `token ${this.config.token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error("Upload failed: " + res.status);
+                return await res.json();
+            }
+
+            async delete(path) {
+                // Need SHA to delete
+                const check = await fetch(`${this.baseUrl}/contents/${path}`, {
+                    headers: { 'Authorization': `token ${this.config.token}` }
+                });
+                if (!check.ok) return; // Already gone?
+                const info = await check.json();
+
+                await fetch(`${this.baseUrl}/contents/${path}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `token ${this.config.token}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: "Delete via Antigravity", sha: info.sha })
+                });
+            }
+        }
+
+        class LocalAdapter extends StorageAdapter {
+            constructor(config) {
+                super(config);
+                // Only accept real handles. JSON.stringify turns handles into {}, we must ignore those.
+                this.handle = (config.handle && config.handle.kind === 'directory') ? config.handle : null;
+            }
+
+            async _ensureInit() {
+                if (this.ready) return true;
+                this.ready = await this.init();
+                return this.ready;
+            }
+
+            async _ensureInit() {
+                if (this.ready) return true;
+                this.ready = await this.init();
+                return this.ready;
+            }
+
+            async init() {
+                // Try restore from IDB if missing
+                if (!this.handle && this.config.handleId) {
+                    try {
+                        this.handle = await window.localHandleStore.get(this.config.handleId);
+                    } catch (e) { console.warn("Failed to restore handle", e); }
+                }
+
+                if (!this.handle) return false;
+
+                // Verify permission
+                const opts = { mode: 'readwrite' };
+                // .queryPermission might not exist on restored handle if prototype is lost? 
+                // No, IDB Structured Clone algorithm preserves FileSystemHandle prototype methods usually.
+                try {
+                    if ((await this.handle.queryPermission(opts)) === 'granted') return true;
+                } catch (e) { return false; } // Handle might be bad
+
+                // Request (user gesture usually required, might fail here if not in gesture)
+                try {
+                    if ((await this.handle.requestPermission(opts)) === 'granted') return true;
+                } catch (e) { console.debug("Permission request failed (needs gesture)", e); }
+
+                return false;
+            }
+
+            async list(path = '') {
+                if (!await this._ensureInit()) return [];
+                if (!this.handle) return [];
+
+                // Recursive walk
+                const files = [];
+                const entries = [{ handle: this.handle, path: '' }];
+
+                while (entries.length > 0) {
+                    const { handle, path } = entries.pop();
+                    for await (const [key, value] of handle.entries()) {
+                        const fullPath = path ? `${path}/${key}` : key;
+                        if (value.kind === 'file') {
+                            // We don't have a URL for local files unless we create ObjectURL on demand.
+                            // For listing, we just return metadata. 
+                            files.push({
+                                name: key,
+                                path: fullPath,
+                                folder: path,
+                                type: 'file',
+                                handle: value // Store handle for direct read
+                            });
+                        } else if (value.kind === 'directory') {
+                            entries.push({ handle: value, path: fullPath });
+                        }
+                    }
+                }
+                return files;
+            }
+
+            async read(path) {
+                if (!await this._ensureInit()) throw new Error("Local Storage not ready");
+
+                // Path is "folder/file.ext"
+                const parts = path.split('/');
+                let current = this.handle;
+                for (let i = 0; i < parts.length - 1; i++) {
+                    current = await current.getDirectoryHandle(parts[i]);
+                }
+                const fileHandle = await current.getFileHandle(parts[parts.length - 1]);
+                return await fileHandle.getFile(); // Returns Blob
+            }
+
+            async write(path, content, type) {
+                if (!await this._ensureInit()) throw new Error("Local Storage not ready");
+
+                const parts = path.split('/');
+                let current = this.handle;
+                // Create folders
+                for (let i = 0; i < parts.length - 1; i++) {
+                    current = await current.getDirectoryHandle(parts[i], { create: true });
+                }
+                const fileHandle = await current.getFileHandle(parts[parts.length - 1], { create: true });
+                const writable = await fileHandle.createWritable();
+                await writable.write(content);
+                await writable.close();
+            }
+
+            async delete(path) {
+                const parts = path.split('/');
+                let current = this.handle;
+                for (let i = 0; i < parts.length - 1; i++) {
+                    current = await current.getDirectoryHandle(parts[i]);
+                }
+                await current.removeEntry(parts[parts.length - 1]);
+            }
+        }
+
+        class IndexedDBAdapter extends StorageAdapter {
+            constructor(config) {
+                super(config);
+                this.dbName = 'AntigravityGallery';
+                this.storeName = 'files';
+                this.db = null;
+            }
+
+            async _open() {
+                if (this.db) return this.db;
+                return new Promise((resolve, reject) => {
+                    const req = indexedDB.open(this.dbName, 1);
+                    req.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains(this.storeName)) {
+                            db.createObjectStore(this.storeName, { keyPath: 'path' });
+                        }
+                    };
+                    req.onsuccess = () => { this.db = req.result; resolve(this.db); };
+                    req.onerror = () => reject(req.error);
+                });
+            }
+
+            async list(path = '') {
+                await this._open();
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(this.storeName, 'readonly');
+                    const store = tx.objectStore(this.storeName);
+                    const req = store.getAll(); // Simple for now. optimize later.
+                    req.onsuccess = () => {
+                        const all = req.result;
+                        resolve(all.map(f => ({
+                            name: f.path.split('/').pop(),
+                            path: f.path,
+                            folder: f.path.includes('/') ? f.path.substring(0, f.path.lastIndexOf('/')) : '',
+                            type: 'file',
+                            size: f.content.size,
+                            date: f.created
+                        })));
+                    };
+                    req.onerror = () => reject(req.error);
+                });
+            }
+
+            async read(path) {
+                await this._open();
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(this.storeName, 'readonly');
+                    const req = tx.objectStore(this.storeName).get(path);
+                    req.onsuccess = () => {
+                        if (req.result) resolve(req.result.content); // Blob
+                        else reject(new Error("File not found"));
+                    };
+                    req.onerror = () => reject(req.error);
+                });
+            }
+
+            async write(path, content, type) {
+                await this._open();
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(this.storeName, 'readwrite');
+                    tx.objectStore(this.storeName).put({
+                        path: path,
+                        content: content,
+                        created: new Date().toISOString()
+                    });
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
+            }
+
+            async delete(path) {
+                await this._open();
+                return new Promise((resolve, reject) => {
+                    const tx = this.db.transaction(this.storeName, 'readwrite');
+                    tx.objectStore(this.storeName).delete(path);
+                    tx.oncomplete = () => resolve();
+                    tx.onerror = () => reject(tx.error);
+                });
+            }
+        }
+
+        class StorageManager {
+            constructor() {
+                this.adapters = [];
+                this.activeAdapter = null;
+            }
+
+            register(id, type, config) {
+                let adapter;
+                if (type === 'github') adapter = new GitHubAdapter(config);
+                if (type === 'local') adapter = new LocalAdapter(config);
+                if (type === 'idb') adapter = new IndexedDBAdapter(config);
+
+                if (adapter) {
+                    adapter.id = id;
+                    adapter.name = config.name;
+                    adapter.type = type;
+                    this.adapters.push(adapter);
+                }
+            }
+
+            setActive(id) {
+                const found = this.adapters.find(a => a.id === id);
+                if (found) this.activeAdapter = found;
+            }
+
+            getActive() {
+                return this.activeAdapter;
+            }
+
+            getAll() { return this.adapters; }
+
+            // Facade Methods
+            async list() {
+                if (!this.activeAdapter) return [];
+                return await this.activeAdapter.list();
+            }
+            async read(path) {
+                if (!this.activeAdapter) throw new Error("No Storage Active");
+                return await this.activeAdapter.read(path);
+            }
+            async write(path, content) {
+                if (!this.activeAdapter) throw new Error("No Storage Active");
+                return await this.activeAdapter.write(path, content);
+            }
+            async delete(path) {
+                if (!this.activeAdapter) throw new Error("No Storage Active");
+                return await this.activeAdapter.delete(path);
+            }
+        }
+
+
         class SettingsStore {
-            constructor() { this.data = this.load(); }
+            constructor() {
+                this.data = this.load();
+                this.initStorage();
+            }
 
             load() {
                 const stored = localStorage.getItem('AG_HORDE_SETTINGS');
@@ -1055,6 +1471,39 @@
 
                 // NEW: Config Structure (v0.0.7)
                 if (!data.config) data.config = {};
+
+                // Storage System Defaults & Migration
+                if (!data.storage) data.storage = { profiles: [], activeProfileId: null };
+
+                // Migrate GitHub -> Storage
+                if (data.github && data.github.profiles && data.github.profiles.length > 0) {
+                    data.github.profiles.forEach(p => {
+                        const exists = data.storage.profiles.find(s => s.id === p.id);
+                        if (!exists) {
+                            data.storage.profiles.push({
+                                id: p.id,
+                                type: 'github',
+                                name: p.name,
+                                config: { token: p.token, repo: p.repo }
+                            });
+                        }
+                    });
+                    if (data.github.activeProfileId && !data.storage.activeProfileId) {
+                        data.storage.activeProfileId = data.github.activeProfileId;
+                    }
+                }
+
+                // Add IndexedDB Default if missing
+                const browserId = 'browser-storage-default';
+                if (!data.storage.profiles.find(p => p.type === 'idb')) {
+                    data.storage.profiles.push({
+                        id: browserId,
+                        type: 'idb',
+                        name: "Browser Storage",
+                        config: {}
+                    });
+                    if (!data.storage.activeProfileId) data.storage.activeProfileId = browserId;
+                }
 
                 // General Defaults
                 if (!data.config.general) data.config.general = {};
@@ -1124,6 +1573,55 @@
 
             // --- Horde URLs ---
             getHordeUrls() { return this.data.horde.urls; }
+            initStorage() {
+                if (!window.storageManager) window.storageManager = new StorageManager();
+                this.data.storage.profiles.forEach(p => {
+                    window.storageManager.register(p.id, p.type, p.config);
+                });
+                const active = this.data.storage.activeProfileId;
+                if (active) window.storageManager.setActive(active);
+            }
+
+            // Storage Methods
+            getStorageProfiles() { return this.data.storage.profiles; }
+            getActiveStorageProfile() {
+                return this.data.storage.profiles.find(p => p.id === this.data.storage.activeProfileId);
+            }
+
+            addStorageProfile(type, name, config) {
+                const id = crypto.randomUUID();
+                this.data.storage.profiles.push({ id, type, name, config });
+                if (!this.data.storage.activeProfileId) this.setActiveStorageProfile(id);
+                window.storageManager.register(id, type, config);
+                if (this.data.storage.activeProfileId === id) window.storageManager.setActive(id);
+                this.save();
+                return id;
+            }
+
+            updateStorageProfile(id, name, config) {
+                const p = this.data.storage.profiles.find(x => x.id === id);
+                if (p) {
+                    p.name = name;
+                    p.config = config;
+                    this.save();
+                }
+            }
+
+            removeStorageProfile(id) {
+                this.data.storage.profiles = this.data.storage.profiles.filter(p => p.id !== id);
+                if (this.data.storage.activeProfileId === id) {
+                    this.data.storage.activeProfileId = this.data.storage.profiles.length > 0 ? this.data.storage.profiles[0].id : null;
+                    if (this.data.storage.activeProfileId) window.storageManager.setActive(this.data.storage.activeProfileId);
+                }
+                this.save();
+            }
+
+            setActiveStorageProfile(id) {
+                this.data.storage.activeProfileId = id;
+                window.storageManager.setActive(id);
+                this.save();
+            }
+
             getActiveHordeUrl() { return this.data.horde.urls.find(u => u.id === this.data.horde.activeUrlId) || { url: 'https://aihorde.net/api/v2' }; }
             getHordeUrl() { return this.getActiveHordeUrl().url; } // Compat
 
@@ -2102,17 +2600,22 @@
                     if (blob.type === 'image/jpeg') ext = 'jpg';
 
                     const now = new Date();
-                    // Use ISO string to ensure consistent YYYY-MM-DD format parts
-                    // Note: This uses UTC. If local time is preferred, we can adjust, but ISO is safer for consistency.
-                    const isoDate = now.toISOString().split('T')[0]; // "2026-01-30"
-                    const [year, month, day] = isoDate.split('-');
-                    const folderPath = `${year}/${month}/${day}`;
+                    const year = now.getFullYear();
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const day = String(now.getDate()).padStart(2, '0');
                     const filename = `${now.getTime()}_${job.id}`;
 
-                    await window.storageClient.uploadImage(blob, `${filename}.${ext}`, folderPath);
+                    // Path: YYYY/MM/DD/filename.ext
+                    const imagePath = `${year}/${month}/${day}/${filename}.${ext}`;
+                    const metaPath = `${year}/${month}/${day}/${filename}.json`;
+
+                    await window.storageManager.write(imagePath, blob);
+
                     const meta = { prompt: job.prompt, params: job.params, horde_id: job.id, created: job.created, worker: job.result.generations[0].worker_name };
-                    await window.storageClient.uploadMetadata(meta, `${filename}.json`, folderPath);
-                    console.log(`Uploaded ${job.id} to GitHub`);
+                    await window.storageManager.write(metaPath, JSON.stringify(meta, null, 2)); // Save as JSON string
+
+                    console.log(`Uploaded ${job.id} to Storage`);
+                    window.notifications.show("Auto-saved to Storage", "success");
                 } catch (e) { console.error("Auto-upload failed", e); }
             }
 
@@ -2688,11 +3191,6 @@
                     // Simplest: Checks if target is inside a specific container?
                     // Or just close everything and let stopPropagation on specific elements handle it?
 
-                    // If we rely on stopPropagation in toggleDropdown, then a click anywhere else closes.
-                    // But we also need clicking INSIDE the dropdown to NOT close it unless it's a button.
-                    // Actually, user said "mouse clicks on the outside close the dropdowns".
-                    // So we need to check if target is inside the dropdown.
-
                     // So we need to check if target is inside the dropdown.
 
                     const dropdowns = ['queue-clear-dropdown', 'gallery-sort-dropdown', 'queue-sort-dropdown'];
@@ -2717,7 +3215,7 @@
             renderSettings() {
                 this.renderHordeManager();
                 this.renderHordeUrlManager();
-                this.renderGitHubManager();
+                this.renderStorageManager();
                 this.renderDiscordManager();
                 this.renderDataManager();
 
@@ -2757,50 +3255,46 @@
 
                 if (!grid) return;
 
-                const gh = window.settingsStore.getActiveGitHub();
-                if (!gh) {
-                    grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20">No GitHub Profile Configured</div>';
+                // Use Storage Manager
+                const adapter = window.storageManager.getActive();
+                if (!adapter) {
+                    grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20 flex flex-col items-center gap-2"><i class="fas fa-database text-4xl text-slate-700"></i><span>No Storage Drive Active</span><button onclick="window.app.router.navigate(\'settings\')" class="text-violet-400 hover:text-violet-300 underline">Configure Storage</button></div>';
                     pagination.classList.add('hidden');
                     return;
                 }
 
                 // Show Loading
-                grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20 animate-pulse"><i class="fas fa-circle-notch fa-spin text-3xl mb-4 text-violet-500"></i><br>Scanning Repository...</div>';
+                grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20 animate-pulse"><i class="fas fa-circle-notch fa-spin text-3xl mb-4 text-violet-500"></i><br>Scanning Storage...</div>';
                 pagination.classList.add('hidden');
                 stats.classList.add('opacity-0');
 
-                const [owner, repo] = gh.repo.split('/');
-                const headers = { 'Authorization': `token ${gh.token}`, 'Accept': 'application/vnd.github+json' };
-
                 try {
-                    // 1. Fetch Tree Recursively (efficiently get all files)
-                    // unique cache buster not needed if we want newest? HEAD usually fresh.
-                    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/HEAD?recursive=1`, { headers });
-                    if (!res.ok) throw new Error("Failed to scan repository contents");
+                    // 1. Fetch List using StorageManager
+                    const files = await window.storageManager.list();
 
-                    const data = await res.json();
-                    if (data.truncated) console.warn("Gallery truncated: Repository too large.");
+                    if (files.length === 0) {
+                        grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20">Storage is empty.</div>';
+                        return;
+                    }
 
-                    // 2. Process Files
-                    // Store strict source of truth.
-                    this.galleryAllFiles = data.tree
-                        .filter(f => f.type === 'blob' && /\.(png|webp|jpg|jpeg)$/i.test(f.path))
-                        .map(f => {
-                            const parts = f.path.split('/');
-                            let folderKey = parts[0];
-                            // Detect YYYY/MM/DD structure
-                            if (parts.length >= 4 && /^\d{4}$/.test(parts[0]) && /^\d{2}$/.test(parts[1]) && /^\d{2}$/.test(parts[2])) {
-                                folderKey = `${parts[0]}-${parts[1]}-${parts[2]}`;
-                            }
+                    // 2. Filter for Images (png/webp/jpg)
+                    // Adapter returns { name, path, folder, type, url? }
+                    // We need to parse dates from folder paths if possible (YYYY-MM-DD format usually)
 
-                            return {
-                                path: f.path,
-                                name: parts[parts.length - 1],
-                                folder: folderKey,
-                                // Construct content API URL for secure fetching
-                                url: `https://api.github.com/repos/${owner}/${repo}/contents/${f.path}`
-                            };
-                        });
+                    this.galleryAllFiles = files.filter(f => f.name.match(/\.(png|webp|jpg|jpeg)$/i)).map(f => {
+                        const parts = f.path.split('/');
+                        let folder = parts.length > 1 ? parts[parts.length - 2] : 'Unsorted';
+
+                        // Enhanced Date Parsing for YYYY/MM/DD structure
+                        if (parts.length >= 4 && /^\d{4}$/.test(parts[0]) && /^\d{2}$/.test(parts[1]) && /^\d{2}$/.test(parts[2])) {
+                            folder = `${parts[0]}-${parts[1]}-${parts[2]}`;
+                        }
+
+                        return {
+                            ...f,
+                            folder: folder
+                        };
+                    });
 
                     // 3. Calendar Init
                     const dateCounts = {};
@@ -3004,7 +3498,7 @@
                         <div class="glass p-2 rounded-xl group relative overflow-hidden transition-all hover:scale-[1.02] cursor-pointer" onclick="window.app.openGalleryImage('${img.path}')">
                             <div class="aspect-square bg-slate-900 rounded-lg flex items-center justify-center relative overflow-hidden">
                                 <i class="fas fa-image text-slate-700 text-3xl placeholder-icon"></i>
-                                <img data-src="${img.url}" data-filename="${img.name}" class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 gallery-img" loading="lazy">
+                                <img data-src="${img.url}" data-path="${img.path}" data-filename="${img.name}" class="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-300 gallery-img" loading="lazy">
                             </div>
                             <div class="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2 pointer-events-none">
                                 <a href="#" target="_blank" onclick="event.stopPropagation()" class="p-2 bg-white/20 rounded-full hover:bg-white/40 text-white pointer-events-auto js-open-link" title="Open Image"><i class="fas fa-external-link-alt"></i></a>
@@ -3039,27 +3533,22 @@
 
             async loadGalleryImagesSecurely() {
                 const imgs = document.querySelectorAll('img.gallery-img');
-                const gh = window.settingsStore.getActiveGitHub();
-                if (!gh) return;
-
-                // Use API to fetch raw content (redirects to signed raw url)
-                const headers = {
-                    'Authorization': `token ${gh.token}`,
-                    'Accept': 'application/vnd.github.raw'
-                };
+                const adapter = window.storageManager.getActive();
+                if (!adapter) return;
 
                 // Process sequentially or limited parallel
                 const batchSize = 5;
                 for (let i = 0; i < imgs.length; i += batchSize) {
                     const batch = Array.from(imgs).slice(i, i + batchSize);
                     await Promise.all(batch.map(async (img) => {
-                        const url = img.getAttribute('data-src');
-                        if (!url) return;
+                        const path = img.getAttribute('data-path');
+                        if (!path) return;
 
                         try {
-                            const res = await fetch(url, { headers });
-                            if (!res.ok) throw new Error(`Fetch failed: ${res.status}`);
-                            const blob = await res.blob();
+                            // Check if we already have a blob url (re-render optimization?)
+                            if (img.src && img.src.startsWith('blob:')) return;
+
+                            const blob = await window.storageManager.read(path);
                             const objUrl = URL.createObjectURL(blob);
                             this.galleryObjectUrls.push(objUrl);
 
@@ -3077,7 +3566,7 @@
                                 if (dlBtn) dlBtn.onclick = () => window.app.downloadGalleryImage(objUrl, img.getAttribute('data-filename'));
                             }
                         } catch (e) {
-                            console.warn("Failed to load image securely", url, e);
+                            console.warn("Failed to load image securely", path, e);
                             img.parentElement.innerHTML = '<div class="text-red-500 text-xs text-center p-2 flex flex-col items-center justify-center h-full"><i class="fas fa-exclamation-triangle mb-1"></i><span>Failed</span></div>';
                         }
                     }));
@@ -3104,21 +3593,25 @@
                 // Show Loading
                 this.openModal('Image Details', '<div class="text-center py-20 flex flex-col items-center gap-4"><i class="fas fa-circle-notch fa-spin text-4xl text-violet-500"></i><p class="text-slate-400">Fetching Metadata...</p></div>');
 
-                const gh = window.settingsStore.getActiveGitHub();
-                const [owner, repo] = gh.repo.split('/');
-                const headers = { 'Authorization': `token ${gh.token}`, 'Accept': 'application/vnd.github.raw' };
-
                 // 1. Fetch Metadata (JSON)
                 let meta = null;
                 try {
                     // Construct JSON path: "folder/img.png" -> "folder/img.json"
                     const jsonPath = path.replace(/\.(png|webp|jpg|jpeg)$/i, '.json');
-                    const jsonUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${jsonPath}`;
 
-                    const res = await fetch(jsonUrl, { headers });
-                    if (res.ok) meta = await res.json();
+                    // Use Storage Manager
+                    let blob = await window.storageManager.read(jsonPath);
+                    // Handle potential String return (IndexedDB stored JSON as string)
+                    if (!(blob instanceof Blob)) {
+                        const content = typeof blob === 'object' ? JSON.stringify(blob) : String(blob);
+                        blob = new Blob([content], { type: 'application/json' });
+                    }
+
+                    const text = await blob.text();
+                    meta = JSON.parse(text);
                 } catch (e) {
-                    console.warn("No metadata found for", path);
+                    // Metadata might not exist, silent fail is okay, but log for debug
+                    console.debug("Metadata load info:", e);
                 }
 
                 // 2. Prepare Display Data
@@ -3193,15 +3686,22 @@
 
                 // Load Image Securely into Modal
                 try {
-                    const res = await fetch(img.url, { headers });
-                    const blob = await res.blob();
+                    // Always use StorageManager to handle Auth/Local/IDB abstraction
+                    // This fixes the 'headers is not defined' error and supports all adapters, and fixes Blob vs String issues
+                    let blob = await window.storageManager.read(img.path);
+
+                    // Handle potential String return (IndexedDB/IDBAdapter stored JSON or text incorrectly sometimes?)
+                    // Image blobs should be Blobs. If we get a string, something is wrong, but `read` should return Blob for images.
+                    // IndexedDBAdapter.read returns req.result.content.
+
                     const url = URL.createObjectURL(blob);
-                    document.getElementById('modal-full-img').src = url;
-                    // Cache it specifically for this modal session? Browser handles blob url.
-                    // We might leak memory if we don't revoke. 
-                    // TODO: Clean up modal blobs?
+
+                    const fullImg = document.getElementById('modal-full-img');
+                    fullImg.onload = () => { /* URL.revokeObjectURL(fullImg.src); */ };
+                    fullImg.src = url;
                 } catch (e) {
-                    document.getElementById('modal-full-img').alt = "Failed to load image";
+                    // console.warn("Modal Load Failed", e);
+                    document.getElementById('modal-full-img').alt = "Failed to load image: " + e.message;
                 }
 
                 // Save meta to app scope temporarily for reuse
@@ -3233,18 +3733,21 @@
             async downloadGalleryImageFromModal(filename) {
                 const img = this.galleryImages.find(f => f.name === filename);
                 if (!img) return;
-                // We need to fetch blob again or grab from img src if visible
+
                 const imgEl = document.getElementById('modal-full-img');
                 if (imgEl && imgEl.src.startsWith('blob:')) {
                     this.downloadGalleryImage(imgEl.src, filename);
                 } else {
-                    // Fallback fetch
-                    const gh = window.settingsStore.getActiveGitHub();
-                    const headers = { 'Authorization': `token ${gh.token}`, 'Accept': 'application/vnd.github.raw' };
-                    const res = await fetch(img.url, { headers });
-                    const blob = await res.blob();
-                    const url = URL.createObjectURL(blob);
-                    this.downloadGalleryImage(url, filename);
+                    // Fallback fetch via StorageManager
+                    try {
+                        const blob = await window.storageManager.read(img.path);
+                        const url = URL.createObjectURL(blob);
+                        this.downloadGalleryImage(url, filename);
+                        setTimeout(() => URL.revokeObjectURL(url), 5000); // Cleanup later
+                    } catch (e) {
+                        console.error("Download failed", e);
+                        window.notifications.show("Download failed: " + e.message, 'error');
+                    }
                 }
             },
 
@@ -3479,67 +3982,211 @@
                 });
             },
 
-            // === GitHub Manager ===
-            renderGitHubManager() {
-                const list = document.getElementById('settings-github-list');
-                const profiles = window.settingsStore.getGitHubProfiles(); // Assuming implemented or existing
-                // Since I might not have implemented getGitHubProfiles fully in step 941 (it was there), let's check.
-                // It was there: getGitHubProfiles() { return this.data.github.profiles; }
-                const activeId = window.settingsStore.getActiveGitHub()?.id;
+            // === Storage Manager ===
+            renderStorageManager() {
+                const list = document.getElementById('settings-storage-list');
+                if (!list) return;
+                const profiles = window.settingsStore.getStorageProfiles();
+                const activeId = window.settingsStore.getActiveStorageProfile()?.id;
 
                 list.innerHTML = profiles.length === 0
-                    ? '<div class="text-xs text-slate-500 italic p-3 border border-dashed border-slate-700/50 rounded-xl text-center">No profiles added.</div>'
-                    : profiles.map(p => `
+                    ? '<div class="text-xs text-slate-500 italic p-3 border border-dashed border-slate-700/50 rounded-xl text-center">No storage profiles added.</div>'
+                    : profiles.map(p => {
+                        let icon = 'hdd';
+                        let desc = p.type;
+                        if (p.type === 'github') { icon = 'github'; desc = p.config.repo; }
+                        else if (p.type === 'local') { icon = 'folder-open'; desc = 'Local System'; }
+                        else if (p.type === 'idb') { icon = 'database'; desc = 'Browser Storage'; }
+
+                        return `
                     <div class="glass p-3 rounded-xl flex items-center justify-between gap-3 ${p.id === activeId ? 'border-l-2 border-emerald-500 bg-emerald-500/5' : ''}">
-                        <div>
-                            <div class="font-bold text-sm text-slate-200">${p.name}</div>
-                            <div class="text-[10px] font-mono text-slate-500">${p.repo}</div>
+                        <div class="flex items-center gap-3">
+                            <div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center text-slate-500">
+                                <i class="fab fa-${icon === 'github' ? 'github' : ''} fas fa-${icon !== 'github' ? icon : ''}"></i>
+                            </div>
+                            <div>
+                                <div class="font-bold text-sm text-slate-200">${p.name}</div>
+                                <div class="text-[10px] font-mono text-slate-500">${desc}</div>
+                            </div>
                         </div>
                         <div class="flex items-center gap-1">
-                             <button onclick="window.app.setActiveGitHub('${p.id}')" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center ${p.id === activeId ? 'text-emerald-400' : 'text-slate-500 hover:text-white'}"><i class="fas fa-check"></i></button>
-                             <button onclick="window.app.openAddGitHubModal('${p.id}')" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-400"><i class="fas fa-pen"></i></button>
-                             <button onclick="window.app.deleteGitHub('${p.id}')" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center text-slate-500 hover:text-red-400"><i class="fas fa-trash"></i></button>
+                             <button onclick="window.app.setActiveStorageProfile('${p.id}')" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center ${p.id === activeId ? 'text-emerald-400' : 'text-slate-500 hover:text-white'}" title="Set Active"><i class="fas fa-check"></i></button>
+                             <button onclick="window.app.openAddStorageModal('${p.id}')" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center text-slate-500 hover:text-blue-400" title="Edit"><i class="fas fa-pen"></i></button>
+                             ${profiles.length > 1 ? `<button onclick="window.app.deleteStorageProfile('${p.id}')" class="glass-btn p-1.5 w-8 h-8 flex items-center justify-center text-slate-500 hover:text-red-400" title="Delete"><i class="fas fa-trash"></i></button>` : ''}
                         </div>
-                    </div>`).join('');
+                    </div>`;
+                    }).join('');
             },
 
-            openAddGitHubModal(id = null) {
-                let current = { name: '', token: '', repo: '' };
+            openAddStorageModal(id = null) {
+                let current = { name: '', type: 'github', config: {} };
                 if (id) {
-                    const profiles = window.settingsStore.getGitHubProfiles();
-                    current = profiles.find(p => p.id === id) || current;
+                    const profiles = window.settingsStore.getStorageProfiles();
+                    const found = profiles.find(p => p.id === id);
+                    // Use shallow copy for config to preserve FileSystemHandle (which is lost in JSON.parse/stringify)
+                    if (found) current = { ...found, config: { ...found.config } };
                 }
-                const html = `
+
+                // Temporary State for Modal
+                window.app.tempStorageState = current;
+                window.app.tempLocalHandle = null;
+
+                const renderModalContent = () => {
+                    const s = window.app.tempStorageState;
+                    return `
                     <div class="space-y-4">
-                        <input type="hidden" id="gh-id" value="${id || ''}">
-                        <input type="text" id="new-gh-name" value="${current.name}" placeholder="Profile Name" class="glass-input w-full">
-                        <input type="password" id="new-gh-token" value="${current.token}" placeholder="Personal Access Token (PAT)" class="glass-input w-full font-mono">
-                        <input type="text" id="new-gh-repo" value="${current.repo}" placeholder="Repo (user/repo)" class="glass-input w-full font-mono">
+                        <input type="hidden" id="storage-id" value="${id || ''}">
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 mb-1">Name</label>
+                                <input type="text" id="storage-name" value="${s.name}" oninput="window.app.tempStorageState.name = this.value" placeholder="My Storage" class="glass-input w-full">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 mb-1">Type</label>
+                                <select id="storage-type" onchange="window.app.tempStorageState.type = this.value; window.app.refreshStorageModal();" class="glass-input w-full bg-slate-900/50" ${id ? 'disabled' : ''}>
+                                    <option value="github" ${s.type === 'github' ? 'selected' : ''}>GitHub</option>
+                                    <option value="local" ${s.type === 'local' ? 'selected' : ''}>Local Folder (Chrome/Edge)</option>
+                                    <option value="idb" ${s.type === 'idb' ? 'selected' : ''}>Browser Storage (IndexedDB)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Dynamic Config Fields -->
+                        <div class="p-4 bg-slate-900/30 rounded-xl border border-white/5 space-y-3">
+                            ${s.type === 'github' ? `
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-400 mb-1">Personal Access Token (PAT)</label>
+                                    <input type="password" value="${s.config.token || ''}" onchange="window.app.tempStorageState.config.token = this.value" placeholder="ghp_..." class="glass-input w-full font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-400 mb-1">Repository (user/repo)</label>
+                                    <input type="text" value="${s.config.repo || ''}" onchange="window.app.tempStorageState.config.repo = this.value" placeholder="username/antigravity-gallery" class="glass-input w-full font-mono">
+                                </div>
+                            ` : ''}
+
+                            ${s.type === 'local' ? `
+                                <div class="text-center py-4">
+                                    <button onclick="window.app.pickLocalFolder()" class="glass-btn bg-violet-600 hover:bg-violet-500 px-6 py-2 rounded-xl font-bold flex items-center gap-2 mx-auto">
+                                        <i class="fas fa-folder-open"></i> Select Folder
+                                    </button>
+                                    <div id="local-folder-status" class="mt-2 text-xs text-slate-400 italic">
+                                        ${id ? 'Folder access requires re-confirmation on reload.' : 'Click to select a local folder.'}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            ${s.type === 'idb' ? `
+                                <div class="text-xs text-slate-500 italic text-center">
+                                    Stores images inside your browser's internal database. Fast, but clearing browser data will delete these images.
+                                </div>
+                            ` : ''}
+                        </div>
+
                         <div class="flex justify-end gap-2">
-                             <button onclick="window.app.saveGitHub()" class="glass-btn bg-emerald-600 hover:bg-emerald-500">Save Profile</button>
+                             <button onclick="window.app.saveStorageProfile()" class="glass-btn bg-emerald-600 hover:bg-emerald-500">Save Profile</button>
                         </div>
                     </div>
                 `;
-                this.openModal(id ? 'Edit GitHub Profile' : 'Add GitHub Profile', html);
+                };
+
+                this.openModal(id ? 'Edit Storage Profile' : 'Add Storage Profile', renderModalContent());
             },
 
-            saveGitHub() {
-                const id = document.getElementById('gh-id').value;
-                const name = document.getElementById('new-gh-name').value;
-                const token = document.getElementById('new-gh-token').value;
-                const repo = document.getElementById('new-gh-repo').value;
-                if (!name || !token || !repo) return window.notifications.show("Missing fields", 'warning');
+            refreshStorageModal() {
+                document.getElementById('modal-content').innerHTML = `
+                    <div class="space-y-4">
+                        <input type="hidden" id="storage-id" value="${document.getElementById('storage-id').value}">
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 mb-1">Name</label>
+                                <input type="text" id="storage-name" value="${window.app.tempStorageState.name}" oninput="window.app.tempStorageState.name = this.value" placeholder="My Storage" class="glass-input w-full">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 mb-1">Type</label>
+                                <select id="storage-type" onchange="window.app.tempStorageState.type = this.value; window.app.refreshStorageModal();" class="glass-input w-full bg-slate-900/50" ${document.getElementById('storage-id').value ? 'disabled' : ''}>
+                                    <option value="github" ${window.app.tempStorageState.type === 'github' ? 'selected' : ''}>GitHub</option>
+                                    <option value="local" ${window.app.tempStorageState.type === 'local' ? 'selected' : ''}>Local Folder (Chrome/Edge)</option>
+                                    <option value="idb" ${window.app.tempStorageState.type === 'idb' ? 'selected' : ''}>Browser Storage (IndexedDB)</option>
+                                </select>
+                            </div>
+                        </div>
 
-                if (id) window.settingsStore.updateGitHubProfile(id, name, token, repo);
-                else window.settingsStore.addGitHubProfile(name, token, repo);
+                        <!-- Dynamic Config Fields -->
+                        <div class="p-4 bg-slate-900/30 rounded-xl border border-white/5 space-y-3">
+                            ${window.app.tempStorageState.type === 'github' ? `
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-400 mb-1">Personal Access Token (PAT)</label>
+                                    <input type="password" value="${window.app.tempStorageState.config.token || ''}" onchange="window.app.tempStorageState.config.token = this.value" placeholder="ghp_..." class="glass-input w-full font-mono">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-400 mb-1">Repository (user/repo)</label>
+                                    <input type="text" value="${window.app.tempStorageState.config.repo || ''}" onchange="window.app.tempStorageState.config.repo = this.value" placeholder="username/antigravity-gallery" class="glass-input w-full font-mono">
+                                </div>
+                            ` : ''}
+
+                            ${window.app.tempStorageState.type === 'local' ? `
+                                <div class="text-center py-4">
+                                    <button onclick="window.app.pickLocalFolder()" class="glass-btn bg-violet-600 hover:bg-violet-500 px-6 py-2 rounded-xl font-bold flex items-center gap-2 mx-auto">
+                                        <i class="fas fa-folder-open"></i> Select Folder
+                                    </button>
+                                    <div id="local-folder-status" class="mt-2 text-xs text-slate-400 italic">
+                                        ${window.app.tempLocalHandle ? `Selected: ${window.app.tempLocalHandle.name}` : 'Click to select a local folder.'}
+                                    </div>
+                                </div>
+                            ` : ''}
+
+                            ${window.app.tempStorageState.type === 'idb' ? `
+                                <div class="text-xs text-slate-500 italic text-center">
+                                    Stores images inside your browser's internal database. Fast, but clearing browser data will delete these images.
+                                </div>
+                            ` : ''}
+                        </div>
+
+                        <div class="flex justify-end gap-2">
+                             <button onclick="window.app.saveStorageProfile()" class="glass-btn bg-emerald-600 hover:bg-emerald-500">Save Profile</button>
+                        </div>
+                    </div>
+                `;
+            },
+
+            async pickLocalFolder() {
+                try {
+                    const handle = await window.showDirectoryPicker();
+                    window.app.tempLocalHandle = handle;
+                    window.app.refreshStorageModal();
+                } catch (e) {
+                    console.warn("Folder picker cancelled or failed", e);
+                }
+            },
+
+            async saveStorageProfile() {
+                const s = window.app.tempStorageState;
+                const id = document.getElementById('storage-id').value;
+
+                if (!s.name) return window.notifications.show("Name is required", 'warning');
+                if (s.type === 'github' && (!s.config.token || !s.config.repo)) return window.notifications.show("GitHub fields required", 'warning');
+                if (s.type === 'local' && !id && !window.app.tempLocalHandle) return window.notifications.show("Please select a folder", 'warning');
+
+                if (s.type === 'local' && window.app.tempLocalHandle) {
+                    const handleId = crypto.randomUUID();
+                    await window.localHandleStore.set(handleId, window.app.tempLocalHandle);
+                    s.config.handleId = handleId;
+                    s.config.handle = window.app.tempLocalHandle;
+                }
+
+                if (id) window.settingsStore.updateStorageProfile(id, s.name, s.config);
+                else window.settingsStore.addStorageProfile(s.type, s.name, s.config);
 
                 this.renderSettings();
                 this.closeModal();
             },
-            setActiveGitHub(id) { window.settingsStore.setActiveGitHub(id); this.renderSettings(); },
-            deleteGitHub(id) {
-                window.dialogs.confirm("Delete Profile", "Remove this GitHub profile?").then(ok => {
-                    if (ok) { window.settingsStore.removeGitHubProfile(id); this.renderSettings(); }
+
+            setActiveStorageProfile(id) { window.settingsStore.setActiveStorageProfile(id); this.renderSettings(); },
+            deleteStorageProfile(id) {
+                window.dialogs.confirm("Delete Profile", "Remove this storage profile?").then(ok => {
+                    if (ok) { window.settingsStore.removeStorageProfile(id); this.renderSettings(); }
                 });
             },
 

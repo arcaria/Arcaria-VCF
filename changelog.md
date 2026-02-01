@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.1.2] - (Multi-Storage System)
+
+### Added
+
+- **Storage Manager Architecture**:
+  - **Multi-Adapter System**: Unified interface for handling file I/O operations across different backends.
+  - **GitHub Adapter**: Robust integration with GitHub API, supporting private repos, custom branches, and proper Base64 encoding for text/binary.
+  - **Local File System Adapter**: Direct access to user's local folders via the File System Access API. Includes persistent handle restoration across reloads.
+  - **IndexedDB Adapter**: "Browser Storage" profile for zero-configuration, secure, and fast local database storage within the browser.
+  - **Lazy Initialization**: Smart connection logic that only prompts for permissions when required.
+- **Unified Gallery**:
+  - **Abstraction Layer**: Gallery now loads images transparently from the Active Storage Profile (GitHub, Local, or IDB).
+  - **Secure Loading**: Uses ⁨`URL.createObjectURL`⁩ for secure and efficient image display without exposing sensitive paths.
+  - **Metadata Modal**: Full support for reading sidecar JSON metadata files across all storage types.
+- **Settings Overhaul**:
+  - **Storage Profiles**: Dedicated section in Settings to manage multiple storage backends.
+  - **Active Profile**: Switch between storage locations instantly without reloading.
+
+### Improved
+
+- **Path Handling**: Standardized date-based folder structure (⁨`YYYY/MM/DD`⁩) across all adapters for better organization and sorting.
+- **Error Handling**: Enhanced feedback for permission issues (Local Storage) and network errors (GitHub).
+
 ## [v0.1.1] (Deep Search & Stability)
 
 ### Added
