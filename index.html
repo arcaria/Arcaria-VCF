@@ -1078,7 +1078,7 @@
 
     <!-- 2. Settings Store -->
     <script>
-        const APP_VERSION = '0.1.3'; // Automated Version Bump
+        const APP_VERSION = 'pre-0.1.4'; // Automated Version Bump
 
         const DEFAULTS = {
             horde: { keys: [], activeKeyId: null, apiUrl: 'https://aihorde.net/api/v2' },
@@ -5430,15 +5430,14 @@
                 }
 
                 try {
-                    // 2. Fetch Source with Cache Busting
-                    const res = await fetch(window.location.href, { cache: "no-store", headers: { 'Pragma': 'no-cache' } });
+                    // 2. Fetch version.json (Lightweight 50-byte check)
+                    // We assume it's in the same directory as the script/HTML
+                    const res = await fetch('version.json', { cache: "no-store", headers: { 'Pragma': 'no-cache' } });
                     if (!res.ok) return;
-                    const text = await res.text();
+                    const data = await res.json();
 
-                    // 3. Regex Match Version
-                    const match = text.match(/const\s+APP_VERSION\s*=\s*'([0-9.]+)';/);
-                    if (match && match[1]) {
-                        const remoteVersion = match[1];
+                    if (data && data.version) {
+                        const remoteVersion = data.version;
                         if (remoteVersion !== APP_VERSION) {
                             // Notify (Persistent)
                             if (!document.getElementById('update-notification')) {
@@ -5459,7 +5458,8 @@
                         }
                     }
                 } catch (e) {
-                    console.warn("Version Check Failed", e);
+                    // Silently fail or minimal log to avoid spamming console
+                    console.debug("Background version check skipped/failed", e);
                 }
             },
 
