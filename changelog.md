@@ -2,6 +2,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.1.5] - 2026-02-08
+
+### Added
+
+- **Form Engine Upgrades**:
+  - **List Field Support**: Implemented `type: "list"` support in the `FormEngine`, allowing for dynamic management of arrays of objects.
+  - **Nested Object Support**: Enabled rendering of sub-fields within list items through `type: "object"`.
+  - **Dynamic Management**: Added "Add" and "Remove" buttons for list-based fields, enabling users to manage multiple entries (like LoRAs and TIs) directly.
+- **Improved LoRA & TI Integration**:
+  - Populated the "Models & Conditioning" group with interactive list managers for LoRAs, Textual Inversions, and Extra Prompt Texts.
+  - Removed redundant `inject_trigger` field from LoRA schema to align with standardized Horde payloads.
+
+### Fixed
+
+- **Value Collection Bug**: Fixed a critical issue in `FormEngine.getValues()` where fields inside dynamic lists were being skipped during payload construction.
+- **Recursive Population**: Enhanced `setValues()` to correctly recreate list rows and nested field states when loading presets or history.
+
 ## [v0.1.4] - 2026-02-08
 
 ### Added
@@ -274,6 +291,7 @@ All notable changes to this project will be documented in this file.
   - **Notifications**: Custom non-blocking toast system.
   - **Dialogs**: Custom Promise-based modal dialogs replacing native alerts.
   - **Validation**: Smart inputs with character counting and Negative Prompt separation (`###`).
+
 
 
 
