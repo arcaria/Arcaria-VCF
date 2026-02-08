@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.1.4] - 2026-02-08
+
+### Added
+
+- **Optimized Version Check**: Replaced the source-code parsing check with a lightweight `version.json` fetch.
+  - Reduced check overhead from ~350KB to ~50 bytes.
+  - Preserved environment detection logic (skips local development/localhost).
+  - Improved performance on slower connections.
+
 ## [v0.1.3] (Connection Popover & Shared Keys)
 
 ### Added
@@ -251,4 +260,5 @@ All notable changes to this project will be documented in this file.
   - **Notifications**: Custom non-blocking toast system.
   - **Dialogs**: Custom Promise-based modal dialogs replacing native alerts.
   - **Validation**: Smart inputs with character counting and Negative Prompt separation (`###`).
+
 
