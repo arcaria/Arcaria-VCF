@@ -1314,11 +1314,6 @@
                                     "step": 0.05
                                 },
                                 {
-                                    "type": "text",
-                                    "key": "inject_trigger",
-                                    "label": "Trigger Text"
-                                },
-                                {
                                     "type": "boolean",
                                     "key": "is_version",
                                     "label": "Is Version",
@@ -1533,7 +1528,7 @@
 
     <!-- 2. Settings Store -->
     <script>
-        const APP_VERSION = '0.1.4'; // Automated Version Bump
+        const APP_VERSION = '0.1.5'; // Automated Version Bump
 
         const DEFAULTS = {
             horde: { keys: [], activeKeyId: null, apiUrl: 'https://aihorde.net/api/v2' },
@@ -2906,6 +2901,40 @@
                     return wrapper;
                 }
 
+                if (type === 'list') {
+                    wrapper.className = "mb-6 glass p-4 rounded-xl border border-white/10";
+                    const header = document.createElement('div');
+                    header.className = "flex justify-between items-center mb-4";
+                    const hLabel = document.createElement('label');
+                    hLabel.className = "text-xs font-bold text-slate-400 uppercase tracking-widest";
+                    hLabel.innerText = item.label || item.key;
+
+                    const addBtn = document.createElement('button');
+                    addBtn.type = "button";
+                    addBtn.className = "text-[10px] bg-violet-600/20 hover:bg-violet-600/40 text-violet-400 px-2 py-1 rounded border border-violet-500/30 transition-all";
+                    addBtn.innerHTML = `<i class="fas fa-plus mr-1"></i> Add ${item.label || 'Item'}`;
+
+                    header.appendChild(hLabel); header.appendChild(addBtn); wrapper.appendChild(header);
+
+                    const listContainer = document.createElement('div');
+                    listContainer.className = "space-y-3";
+                    listContainer.dataset.listKey = item.key;
+                    listContainer.dataset.itemSchema = JSON.stringify(item.item_schema || {});
+                    wrapper.appendChild(listContainer);
+
+                    addBtn.onclick = () => this.addListItem(listContainer, item.item_schema);
+                    return wrapper;
+                }
+
+                if (type === 'object') {
+                    const objContainer = document.createElement('div');
+                    objContainer.className = "grid grid-cols-1 sm:grid-cols-2 gap-3";
+                    if (item.fields) {
+                        item.fields.forEach(f => objContainer.appendChild(this.createField(f)));
+                    }
+                    return objContainer;
+                }
+
                 // Label
                 const label = document.createElement('label');
                 label.className = "block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wide";
@@ -3018,12 +3047,47 @@
                 return wrapper;
             }
 
+            addListItem(container, schema, initialData = null) {
+                const row = document.createElement('div');
+                row.className = "list-item relative glass p-4 rounded-xl border border-white/5 bg-slate-900/30 group/item";
+
+                // Remove Button
+                const removeBtn = document.createElement('button');
+                removeBtn.className = "absolute -top-2 -right-2 w-6 h-6 bg-red-900/80 text-white rounded-full flex items-center justify-center opacity-0 group-hover/item:opacity-100 transition-all z-10 hover:bg-red-600";
+                removeBtn.innerHTML = '<i class="fas fa-times text-[10px]"></i>';
+                removeBtn.onclick = () => row.remove();
+                row.appendChild(removeBtn);
+
+                const field = this.createField(schema);
+                row.appendChild(field);
+                container.appendChild(row);
+
+                if (initialData) this.setValues(row, { params: initialData });
+            }
+
             setValues(container, data) {
                 if (!container || !data) return;
                 const flattened = { ...data.params, ...data.meta };
-                const inputs = container.querySelectorAll('[data-key]');
 
+                // Handle Lists FIRST
+                const listContainers = container.querySelectorAll('[data-list-key]');
+                listContainers.forEach(listEl => {
+                    // Only process lists owned by CURRENT container (not nested lists)
+                    if (this._getNearestContainer(listEl) !== container) return;
+
+                    const key = listEl.dataset.listKey;
+                    const schema = JSON.parse(listEl.dataset.itemSchema || '{}');
+                    listEl.innerHTML = ''; // Clear
+                    if (Array.isArray(flattened[key])) {
+                        flattened[key].forEach(itemData => this.addListItem(listEl, schema, itemData));
+                    }
+                });
+
+                const inputs = container.querySelectorAll('[data-key]');
                 inputs.forEach(input => {
+                    // Only process inputs owned by CURRENT container
+                    if (this._getNearestContainer(input) !== container) return;
+
                     const key = input.dataset.key;
                     if (flattened[key] !== undefined) {
                         const type = input.dataset.type;
@@ -3032,23 +3096,54 @@
                         } else {
                             input.value = flattened[key];
                         }
-                        // Dispatch event to sync sliders/UI
                         input.dispatchEvent(new Event('input', { bubbles: true }));
                         input.dispatchEvent(new Event('change', { bubbles: true }));
                     }
                 });
             }
 
+            // Helper to find the nearest parent that is a list component or the form itself
+            _getNearestContainer(el) {
+                let parent = el.parentElement;
+                while (parent) {
+                    if (parent.dataset.listKey || parent.classList.contains('list-item') || parent.id === 'dynamic-form-container') {
+                        return parent;
+                    }
+                    parent = parent.parentElement;
+                }
+                return null;
+            }
+
             getValues(container) {
                 const values = {}; const meta = {};
+
+                // Handle Lists
+                const lists = container.querySelectorAll('[data-list-key]');
+                lists.forEach(listEl => {
+                    // Only process lists owned by CURRENT container
+                    if (this._getNearestContainer(listEl) !== container) return;
+
+                    const key = listEl.dataset.listKey;
+                    const items = [];
+                    const rowEls = listEl.querySelectorAll(':scope > .list-item');
+                    rowEls.forEach(row => {
+                        const rowVals = this.getValues(row);
+                        items.push({ ...rowVals.params, ...rowVals.meta });
+                    });
+                    values[key] = items;
+                });
+
                 const inputs = container.querySelectorAll('[data-key]');
                 inputs.forEach(input => {
+                    // Only process inputs owned by CURRENT container
+                    if (this._getNearestContainer(input) !== container) return;
+
                     const key = input.dataset.key;
                     const isUserOnly = input.dataset.userOnly === "true";
                     let val = input.value;
-                    const type = input.dataset.type; // Use the stored type
+                    const type = input.dataset.type;
 
-                    if (type === 'number') val = parseFloat(val);
+                    if (type === 'number' || type === 'slider') val = parseFloat(val);
                     if (type === 'checkbox') val = input.checked;
 
                     if (isUserOnly) meta[key] = val; else values[key] = val;
