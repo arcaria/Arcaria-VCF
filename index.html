@@ -141,6 +141,13 @@
             display: none;
         }
 
+        /* Mobile Overflow Prevention */
+        html,
+        body {
+            max-width: 100vw;
+            overflow-x: hidden;
+        }
+
         /* Ensure tailwind hidden works if loading slow */
 
         /* Raw JSON / Matrix Theme */
@@ -176,10 +183,21 @@
             background: #00ff00 !important;
             color: #000000 !important;
         }
+
+        /* Utility: Hide Scrollbar */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
 
-<body class="flex flex-col h-screen overflow-hidden">
+<body
+    class="flex flex-col h-screen md:h-screen lg:h-screen supports-[height:100dvh]:h-[100dvh] overflow-hidden bg-[#0f172a]">
 
     <!-- Header / Navbar -->
     <header class="glass sticky top-0 z-50 h-16 shrink-0">
@@ -196,57 +214,98 @@
             </div>
 
             <!-- Navigation -->
-            <nav class="flex items-center bg-slate-900/40 rounded-full p-1 border border-white/5 backdrop-blur-md">
+            <nav
+                class="flex items-center bg-slate-900/40 rounded-full p-0.5 sm:p-1 border border-white/5 backdrop-blur-md shrink min-w-0 overflow-x-auto no-scrollbar">
                 <button onclick="app.router.navigate('generate')"
-                    class="nav-btn px-4 py-1.5 rounded-full text-sm font-medium transition-all text-violet-200 hover:bg-white/5 data-[active]:bg-violet-600 data-[active]:text-white shadow-sm"
-                    id="nav-generate">
-                    Generate
+                    class="nav-btn px-2 sm:px-4 py-1 sm:py-1.5 rounded-full text-sm font-medium transition-all text-violet-200 hover:bg-white/5 data-[active]:bg-violet-600 data-[active]:text-white shadow-sm flex items-center gap-1 sm:gap-2 shrink-0"
+                    id="nav-generate" title="Generate">
+                    <i class="fas fa-magic"></i>
+                    <span class="hidden sm:inline">Generate</span>
                 </button>
                 <button onclick="app.router.navigate('pending')"
-                    class="nav-btn px-4 py-1.5 rounded-full text-sm font-medium transition-all text-violet-200 hover:bg-white/5 data-[active]:bg-violet-600 data-[active]:text-white shadow-sm"
-                    id="nav-pending">
-                    Pending
+                    class="nav-btn px-2 sm:px-4 py-1 sm:py-1.5 rounded-full text-sm font-medium transition-all text-violet-200 hover:bg-white/5 data-[active]:bg-violet-600 data-[active]:text-white shadow-sm flex items-center gap-1 sm:gap-2 shrink-0"
+                    id="nav-pending" title="Pending">
+                    <i class="fas fa-clock"></i>
+                    <span class="hidden sm:inline">Pending</span>
                     <span id="queue-count" class="hidden ml-1 text-[10px] bg-white/20 px-1.5 rounded-full">0</span>
                 </button>
                 <button onclick="app.router.navigate('gallery')"
-                    class="nav-btn px-4 py-1.5 rounded-full text-sm font-medium transition-all text-violet-200 hover:bg-white/5 data-[active]:bg-violet-600 data-[active]:text-white shadow-sm"
-                    id="nav-gallery">
-                    Gallery
+                    class="nav-btn px-2 sm:px-4 py-1 sm:py-1.5 rounded-full text-sm font-medium transition-all text-violet-200 hover:bg-white/5 data-[active]:bg-violet-600 data-[active]:text-white shadow-sm flex items-center gap-1 sm:gap-2 shrink-0"
+                    id="nav-gallery" title="Gallery">
+                    <i class="fas fa-images"></i>
+                    <span class="hidden sm:inline">Gallery</span>
                 </button>
                 <button onclick="app.router.navigate('settings')"
-                    class="nav-btn px-4 py-1.5 rounded-full text-sm font-medium transition-all text-violet-200 hover:bg-white/5 data-[active]:bg-violet-600 data-[active]:text-white shadow-sm"
-                    id="nav-settings">
-                    Settings
+                    class="nav-btn px-2 sm:px-4 py-1 sm:py-1.5 rounded-full text-sm font-medium transition-all text-violet-200 hover:bg-white/5 data-[active]:bg-violet-600 data-[active]:text-white shadow-sm flex items-center gap-1 sm:gap-2 shrink-0"
+                    id="nav-settings" title="Settings">
+                    <i class="fas fa-sliders-h"></i>
+                    <span class="hidden sm:inline">Settings</span>
                 </button>
             </nav>
 
-            <!-- User Status -->
-            <div class="flex items-center gap-4 text-xs font-mono">
+            <!-- User Status (Button Only) -->
+            <div class="flex items-center gap-2 sm:gap-4 shrink-0 ml-2 sm:ml-4">
                 <button onclick="window.app.openNotifications()"
-                    class="relative text-slate-400 hover:text-white transition-colors">
-                    <i class="fas fa-bell text-lg"></i>
+                    class="relative text-slate-400 hover:text-white transition-colors shrink-0 p-1">
+                    <i class="fas fa-bell text-base sm:text-lg"></i>
                     <span id="notification-dot"
                         class="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full hidden"></span>
                 </button>
-                <div class="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-900/30 border border-white/5">
-                    <div id="horde-status-dot" class="w-2 h-2 rounded-full bg-slate-600 transition-colors"></div>
-                    <span id="user-kudos" class="opacity-70">---</span>
+
+                <!-- Connection Status Trigger -->
+                <div class="relative">
+                    <button onclick="window.app.toggleConnectionPopover()"
+                        class="relative flex items-center justify-center w-8 h-8 rounded-full bg-slate-900/50 hover:bg-slate-800 border border-white/10 transition-all shrink-0 group z-50">
+                        <div id="horde-status-dot"
+                            class="w-2.5 h-2.5 rounded-full bg-slate-600 transition-colors shadow-inner"></div>
+                    </button>
+
+                    <!-- Popover -->
+                    <div id="connection-popover"
+                        class="hidden absolute top-full right-0 mt-3 w-64 origin-top-right z-[60]">
+                        <div
+                            class="bg-slate-950 rounded-xl p-4 border border-white/10 shadow-2xl relative overflow-hidden animate-in fade-in zoom-in duration-200">
+                            <!-- Arrow -->
+                            <div
+                                class="absolute -top-1.5 right-3 w-3 h-3 bg-slate-950 border-l border-t border-white/10 rotate-45 transform">
+                            </div>
+
+                            <!-- Content -->
+                            <div class="relative z-10 text-center">
+                                <h3 id="popover-username" class="text-sm font-bold text-white mb-0.5 truncate">...</h3>
+                                <p id="popover-kudos" class="text-violet-400 font-mono text-xs mb-3">... Kudos</p>
+
+                                <div id="popover-btn-container" class="flex gap-2 flex-wrap">
+                                    <button onclick="window.app.openUserDetails()"
+                                        class="flex-1 py-1.5 rounded-md bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-bold transition-colors shadow-lg shadow-violet-900/20">
+                                        User Details <i class="fas fa-external-link-alt ml-1"></i>
+                                    </button>
+                                    <button
+                                        onclick="window.app.router.navigate('settings'); window.app.toggleConnectionPopover()"
+                                        class="p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors"
+                                        title="Settings">
+                                        <i class="fas fa-cog"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </header>
 
     <!-- Main Content Area -->
-    <main class="flex-grow relative overflow-hidden text-slate-200">
+    <main class="flex-grow relative overflow-hidden text-slate-200 max-w-full">
 
         <!-- View: Generate -->
         <div id="view-generate"
-            class="view-section absolute inset-0 overflow-y-auto p-4 sm:p-6 lg:p-8 fade-in custom-scroll">
+            class="view-section absolute inset-0 overflow-y-auto p-3 sm:p-6 lg:p-8 fade-in custom-scroll">
             <div class="max-w-7xl mx-auto grid lg:grid-cols-12 gap-6 lg:gap-8">
                 <!-- Main Form -->
                 <div class="lg:col-span-8 space-y-6">
-                    <div class="glass p-6 rounded-2xl border-t border-white/10">
-                        <div class="flex justify-between items-center mb-4">
+                    <div class="glass p-4 sm:p-6 rounded-2xl border-t border-white/10 max-w-full overflow-hidden">
+                        <div class="flex flex-wrap justify-between items-center gap-2 mb-4">
                             <label class="text-sm font-medium text-violet-200">Positive Prompt</label>
                             <div class="flex items-center gap-3">
                                 <div class="relative">
@@ -420,28 +479,29 @@
         </div>
 
         <!-- View: Pending -->
-        <div id="view-pending" class="view-section absolute inset-0 p-4 sm:p-8 hidden flex flex-col h-full">
+        <div id="view-pending" class="view-section absolute inset-0 p-3 sm:p-8 hidden flex flex-col h-full">
             <div class="max-w-5xl mx-auto w-full h-full flex flex-col">
                 <div
                     class="glass p-3 rounded-2xl mb-6 flex flex-wrap gap-4 justify-between items-center border border-white/10 shadow-lg relative z-50">
-                    <div class="flex items-center gap-4 px-2">
-                        <h2 class="text-xl font-bold text-white leading-tight">Queue</h2>
-                        <div class="bg-slate-900/50 p-1 rounded-lg flex gap-1 border border-white/5">
+                    <div class="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-4 px-2 mb-2 sm:mb-0">
+                        <h2 class="text-lg sm:text-xl font-bold text-white leading-tight shrink-0">Queue</h2>
+                        <div
+                            class="bg-slate-900/50 p-0.5 sm:p-1 rounded-lg flex gap-0.5 sm:gap-1 border border-white/5 overflow-x-auto max-w-full">
                             <button onclick="window.app.setQueueFilter('all')" id="qf-all"
-                                class="text-[10px] px-2 py-1 rounded bg-slate-700 text-white transition-colors font-bold">All
-                                <span id="count-all" class="opacity-60 ml-1">0</span></button>
+                                class="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-slate-700 text-white transition-colors font-bold whitespace-nowrap shrink-0">All
+                                <span id="count-all" class="opacity-60 ml-0.5">0</span></button>
                             <button onclick="window.app.setQueueFilter('waiting')" id="qf-waiting"
-                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors font-bold">Waiting
-                                <span id="count-waiting" class="opacity-60 ml-1">0</span></button>
+                                class="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-slate-400 hover:text-white transition-colors font-bold whitespace-nowrap shrink-0">Wait
+                                <span id="count-waiting" class="opacity-60 ml-0.5">0</span></button>
                             <button onclick="window.app.setQueueFilter('processing')" id="qf-processing"
-                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors font-bold">Processing
-                                <span id="count-processing" class="opacity-60 ml-1">0</span></button>
+                                class="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-slate-400 hover:text-white transition-colors font-bold whitespace-nowrap shrink-0">Proc
+                                <span id="count-processing" class="opacity-60 ml-0.5">0</span></button>
                             <button onclick="window.app.setQueueFilter('done')" id="qf-done"
-                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors font-bold">Finished
-                                <span id="count-done" class="opacity-60 ml-1">0</span></button>
+                                class="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-slate-400 hover:text-white transition-colors font-bold whitespace-nowrap shrink-0">Done
+                                <span id="count-done" class="opacity-60 ml-0.5">0</span></button>
                             <button onclick="window.app.setQueueFilter('error')" id="qf-error"
-                                class="text-[10px] px-2 py-1 rounded text-slate-400 hover:text-white transition-colors font-bold">Error
-                                <span id="count-error" class="opacity-60 ml-1">0</span></button>
+                                class="text-[9px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 sm:py-1 rounded text-slate-400 hover:text-white transition-colors font-bold whitespace-nowrap shrink-0">Err
+                                <span id="count-error" class="opacity-60 ml-0.5">0</span></button>
                         </div>
                     </div>
                     <div
@@ -534,7 +594,7 @@
         </div>
 
         <!-- View: Gallery -->
-        <div id="view-gallery" class="view-section absolute inset-0 overflow-y-auto p-4 sm:p-8 hidden">
+        <div id="view-gallery" class="view-section absolute inset-0 overflow-y-auto p-3 sm:p-8 hidden">
             <div class="max-w-7xl mx-auto h-full flex flex-col">
                 <!-- Unified Gallery Toolbar -->
                 <div
@@ -546,8 +606,15 @@
                         </div>
                         <div>
                             <h2 class="text-xl font-bold text-white leading-tight">Gallery</h2>
+                            <div id="gallery-storage-info"
+                                class="hidden mt-1 px-2 py-0.5 rounded-md bg-white/5 border border-white/10 text-[10px] text-slate-400 font-mono inline-flex items-center gap-2 w-fit">
+                                <i class="fas fa-database text-xs text-violet-400"></i>
+                                <span id="gal-store-name" class="font-bold text-slate-300">...</span>
+                                <span class="opacity-50 border-l border-white/10 pl-2 uppercase"
+                                    id="gal-store-type">...</span>
+                            </div>
                             <div id="gallery-stats"
-                                class="text-[10px] font-mono text-slate-400 opacity-0 transition-opacity flex gap-2">
+                                class="text-[10px] font-mono text-slate-400 opacity-0 transition-opacity flex gap-2 mt-1">
                                 <span><span class="text-violet-400 font-bold" id="gal-total-count">0</span>
                                     stored</span>
                                 <span class="text-slate-600">|</span>
@@ -688,20 +755,20 @@
 
         <!-- View: Settings -->
         <div id="view-settings" class="view-section absolute inset-0 overflow-y-auto p-4 sm:p-8 hidden">
-            <div class="max-w-4xl mx-auto glass p-8 rounded-3xl">
+            <div class="max-w-4xl mx-auto glass p-4 sm:p-8 rounded-3xl overflow-hidden">
                 <!-- Settings Header / Tabs -->
-                <div class="flex items-center gap-4 mb-6 border-b border-white/10 pb-4">
+                <div class="flex flex-wrap items-center gap-4 mb-6 border-b border-white/10 pb-4">
                     <h2
-                        class="text-2xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+                        class="text-xl sm:text-2xl font-bold bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
                         Settings</h2>
-                    <div class="flex bg-slate-900/50 p-1 rounded-lg ml-auto">
+                    <div class="flex bg-slate-900/50 p-1 rounded-lg ml-auto overflow-x-auto max-w-full">
                         <button onclick="window.app.switchSettingsTab('general')" id="tab-btn-general"
                             data-active="true"
-                            class="px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-violet-600 text-white shadow-lg">General</button>
+                            class="px-3 sm:px-4 py-1.5 rounded-md text-xs font-bold transition-all bg-violet-600 text-white shadow-lg whitespace-nowrap">General</button>
                         <button onclick="window.app.switchSettingsTab('generation')" id="tab-btn-generation"
-                            class="px-4 py-1.5 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white">Generation</button>
+                            class="px-3 sm:px-4 py-1.5 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white whitespace-nowrap">Generation</button>
                         <button onclick="window.app.switchSettingsTab('connections')" id="tab-btn-connections"
-                            class="px-4 py-1.5 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white">Connections</button>
+                            class="px-3 sm:px-4 py-1.5 rounded-md text-xs font-bold transition-all text-slate-400 hover:text-white whitespace-nowrap">Connections</button>
                     </div>
                 </div>
 
@@ -718,7 +785,7 @@
                                     class="fas fa-save mr-1"></i> Save Changes</button>
                         </div>
 
-                        <div class="grid grid-cols-2 gap-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-xs font-bold text-slate-400 mb-1">Queue Poll Interval
                                     (ms)</label>
@@ -753,7 +820,7 @@
 
                         <div class="space-y-4">
                             <!-- Fine-grained Options -->
-                            <div class="grid grid-cols-2 gap-2 bg-slate-900/30 p-3 rounded">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 bg-slate-900/30 p-3 rounded">
                                 <label class="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
                                     <input type="checkbox" id="export-opt-settings" checked class="accent-violet-500">
                                     Settings
@@ -842,16 +909,16 @@
                     <!-- 1. Horde Keys -->
                     <details class="group glass rounded-xl overflow-hidden mb-4" open>
                         <summary
-                            class="flex justify-between items-center p-4 cursor-pointer list-none bg-slate-800/20 hover:bg-slate-800/40 transition-colors">
+                            class="flex flex-wrap justify-between items-center gap-2 p-3 sm:p-4 cursor-pointer list-none bg-slate-800/20 hover:bg-slate-800/40 transition-colors">
                             <h3
-                                class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                class="text-xs sm:text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2 min-w-0">
                                 <i
-                                    class="fas fa-chevron-right text-xs text-slate-500 transition-transform group-open:rotate-90"></i>
-                                AI Horde Keys
+                                    class="fas fa-chevron-right text-xs text-slate-500 transition-transform group-open:rotate-90 shrink-0"></i>
+                                <span class="truncate">AI Horde Keys</span>
                             </h3>
                             <button onclick="event.preventDefault(); window.app.openAddHordeKeyModal()"
-                                class="text-xs text-violet-400 hover:text-white flex items-center gap-1 glass-btn px-2 py-1"><i
-                                    class="fas fa-plus"></i> Add</button>
+                                class="text-xs text-violet-400 hover:text-white flex items-center gap-1 glass-btn px-2 py-1 shrink-0"><i
+                                    class="fas fa-plus"></i> <span class="hidden sm:inline">Add</span></button>
                         </summary>
                         <div class="p-4 border-t border-white/5 space-y-3">
                             <div id="settings-horde-list" class="space-y-3"></div>
@@ -861,16 +928,16 @@
                     <!-- 1b. Horde API URL -->
                     <details class="group glass rounded-xl overflow-hidden mb-4">
                         <summary
-                            class="flex justify-between items-center p-4 cursor-pointer list-none bg-slate-800/20 hover:bg-slate-800/40 transition-colors">
+                            class="flex flex-wrap justify-between items-center gap-2 p-3 sm:p-4 cursor-pointer list-none bg-slate-800/20 hover:bg-slate-800/40 transition-colors">
                             <h3
-                                class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                class="text-xs sm:text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2 min-w-0">
                                 <i
-                                    class="fas fa-chevron-right text-xs text-slate-500 transition-transform group-open:rotate-90"></i>
-                                AI Horde API URL
+                                    class="fas fa-chevron-right text-xs text-slate-500 transition-transform group-open:rotate-90 shrink-0"></i>
+                                <span class="truncate">AI Horde API URL</span>
                             </h3>
                             <button onclick="event.preventDefault(); window.app.openAddHordeUrlModal()"
-                                class="text-xs text-amber-400 hover:text-white flex items-center gap-1 glass-btn px-2 py-1"><i
-                                    class="fas fa-plus"></i> Add</button>
+                                class="text-xs text-amber-400 hover:text-white flex items-center gap-1 glass-btn px-2 py-1 shrink-0"><i
+                                    class="fas fa-plus"></i> <span class="hidden sm:inline">Add</span></button>
                         </summary>
                         <div class="p-4 border-t border-white/5 space-y-3">
                             <div id="settings-horde-url-list" class="space-y-3"></div>
@@ -880,16 +947,16 @@
                     <!-- 2. Storage Profiles -->
                     <details class="group glass rounded-xl overflow-hidden mb-4">
                         <summary
-                            class="flex justify-between items-center p-4 cursor-pointer list-none bg-slate-800/20 hover:bg-slate-800/40 transition-colors">
+                            class="flex flex-wrap justify-between items-center gap-2 p-3 sm:p-4 cursor-pointer list-none bg-slate-800/20 hover:bg-slate-800/40 transition-colors">
                             <h3
-                                class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                class="text-xs sm:text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2 min-w-0">
                                 <i
-                                    class="fas fa-chevron-right text-xs text-slate-500 transition-transform group-open:rotate-90"></i>
-                                Storage Profiles
+                                    class="fas fa-chevron-right text-xs text-slate-500 transition-transform group-open:rotate-90 shrink-0"></i>
+                                <span class="truncate">Storage Profiles</span>
                             </h3>
                             <button onclick="event.preventDefault(); window.app.openAddStorageModal()"
-                                class="text-xs text-emerald-400 hover:text-white flex items-center gap-1 glass-btn px-2 py-1"><i
-                                    class="fas fa-plus"></i> Add</button>
+                                class="text-xs text-emerald-400 hover:text-white flex items-center gap-1 glass-btn px-2 py-1 shrink-0"><i
+                                    class="fas fa-plus"></i> <span class="hidden sm:inline">Add</span></button>
                         </summary>
                         <div class="p-4 border-t border-white/5 space-y-3">
                             <div id="settings-storage-list" class="space-y-3"></div>
@@ -899,16 +966,16 @@
                     <!-- 3. Discord Webhooks -->
                     <details class="group glass rounded-xl overflow-hidden mb-4">
                         <summary
-                            class="flex justify-between items-center p-4 cursor-pointer list-none bg-slate-800/20 hover:bg-slate-800/40 transition-colors">
+                            class="flex flex-wrap justify-between items-center gap-2 p-3 sm:p-4 cursor-pointer list-none bg-slate-800/20 hover:bg-slate-800/40 transition-colors">
                             <h3
-                                class="text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                                class="text-xs sm:text-sm font-semibold text-slate-300 uppercase tracking-wider flex items-center gap-2 min-w-0">
                                 <i
-                                    class="fas fa-chevron-right text-xs text-slate-500 transition-transform group-open:rotate-90"></i>
-                                Discord Webhooks
+                                    class="fas fa-chevron-right text-xs text-slate-500 transition-transform group-open:rotate-90 shrink-0"></i>
+                                <span class="truncate">Discord Webhooks</span>
                             </h3>
                             <button onclick="event.preventDefault(); window.app.openAddDiscordModal()"
-                                class="text-xs text-indigo-400 hover:text-white flex items-center gap-1 glass-btn px-2 py-1"><i
-                                    class="fas fa-plus"></i> Add</button>
+                                class="text-xs text-indigo-400 hover:text-white flex items-center gap-1 glass-btn px-2 py-1 shrink-0"><i
+                                    class="fas fa-plus"></i> <span class="hidden sm:inline">Add</span></button>
                         </summary>
                         <div class="p-4 border-t border-white/5 space-y-3">
                             <div id="settings-discord-list" class="space-y-3"></div>
@@ -928,23 +995,25 @@
         </div>
 
         <!-- View: Designer -->
-        <div id="view-designer" class="view-section absolute inset-0 overflow-y-auto p-4 hidden">
+        <div id="view-designer" class="view-section absolute inset-0 overflow-y-auto p-2 sm:p-4 hidden">
             <!-- Placeholder for Designer -->
             <div class="max-w-6xl mx-auto h-full flex flex-col glass rounded-2xl overflow-hidden">
-                <div class="p-4 border-b border-white/10 bg-slate-900/50 flex justify-between items-center">
-                    <h3 class="font-bold">Form Designer</h3>
+                <div
+                    class="p-3 sm:p-4 border-b border-white/10 bg-slate-900/50 flex flex-wrap justify-between items-center gap-2">
+                    <h3 class="font-bold text-sm sm:text-base">Form Designer</h3>
                     <button onclick="app.router.navigate('settings')" class="text-sm hover:text-white text-slate-400"><i
                             class="fas fa-times mr-1"></i>
                         Close</button>
                 </div>
-                <div class="flex-grow flex min-h-0">
-                    <div class="w-1/2 border-r border-white/10 p-0 h-full">
+                <div class="flex-grow flex flex-col sm:flex-row min-h-0">
+                    <div class="w-full sm:w-1/2 border-b sm:border-b-0 sm:border-r border-white/10 p-0 h-1/2 sm:h-full">
                         <textarea id="designer-textarea"
                             class="w-full h-full bg-slate-950 text-emerald-400 font-mono text-xs p-4 focus:outline-none resize-none"
                             placeholder="// Paste JSON Schema here..."></textarea>
                     </div>
-                    <div id="designer-preview" class="w-1/2 bg-slate-900/50 p-6 h-full overflow-y-auto custom-scroll">
-                        <div class="text-center opacity-50 mt-20">Live Preview Area</div>
+                    <div id="designer-preview"
+                        class="w-full sm:w-1/2 bg-slate-900/50 p-4 sm:p-6 h-1/2 sm:h-full overflow-y-auto custom-scroll">
+                        <div class="text-center opacity-50 mt-10 sm:mt-20">Live Preview Area</div>
                     </div>
                 </div>
             </div>
@@ -1009,7 +1078,7 @@
 
     <!-- 2. Settings Store -->
     <script>
-        const APP_VERSION = '0.1.2'; // Automated Version Bump
+        const APP_VERSION = '0.1.3'; // Automated Version Bump
 
         const DEFAULTS = {
             horde: { keys: [], activeKeyId: null, apiUrl: 'https://aihorde.net/api/v2' },
@@ -1734,16 +1803,38 @@
 
             async getHeartbeat() {
                 try {
-                    const res = await fetch(`${window.settingsStore.getHordeUrl()}/status/heartbeat`);
+                    const res = await fetch(`${window.settingsStore.getHordeUrl()}/status/heartbeat`, { cache: 'no-store' });
                     return res.ok;
                 } catch (e) { return false; }
             }
 
             async getUserInfo() {
                 try {
-                    const res = await fetch(`${window.settingsStore.getHordeUrl()}/find_user`, { headers: this._getHeaders() });
+                    const res = await fetch(`${window.settingsStore.getHordeUrl()}/find_user`, {
+                        headers: this._getHeaders(),
+                        cache: 'no-store'
+                    });
                     if (!res.ok) throw new Error("User lookup failed");
                     return await res.json();
+                } catch (e) { return null; }
+            }
+
+            async getSharedKeyDetails() {
+                try {
+                    const key = window.settingsStore.getHordeKey();
+                    // Skip anonymous key check for shared key details
+                    if (!key || key === '0000000000') return null;
+
+                    const res = await fetch(`${window.settingsStore.getHordeUrl()}/sharedkeys/${key}`, {
+                        headers: this._getHeaders(),
+                        cache: 'no-store'
+                    });
+                    if (!res.ok) return null;
+                    const data = await res.json();
+
+                    // If we got Data and it has an ID matching our key, it's a valid shared key response
+                    if (data && data.id === key) return data;
+                    return null;
                 } catch (e) { return null; }
             }
 
@@ -3582,6 +3673,179 @@
                 document.body.removeChild(link);
             },
 
+            openModal(title, html) {
+                const m = document.getElementById('app-modal');
+                const t = document.getElementById('app-modal-title');
+                const c = document.getElementById('app-modal-content');
+                if (m && t && c) {
+                    t.innerHTML = title;
+                    c.innerHTML = html;
+                    m.classList.remove('hidden');
+                    // Animation reset?
+                }
+            },
+
+            closeModal() {
+                const m = document.getElementById('app-modal');
+                if (m) m.classList.add('hidden');
+                document.getElementById('app-modal-content').innerHTML = ''; // Clear video/audio
+            },
+
+            async reuseGallerySettings(filename) {
+                // Find image
+                const img = this.galleryAllFiles?.find(f => f.name === filename);
+                if (!img) return window.notifications.show("Image not found in current list", 'error');
+
+                try {
+                    // Need metadata. If we are in the modal, we probably loaded it? 
+                    // We should re-fetch to be safe or pass data. 
+                    // Let's refetch securely.
+                    const jsonPath = img.path.replace(/\.(png|webp|jpg|jpeg)$/i, '.json');
+                    let blob = await window.storageManager.read(jsonPath);
+                    if (!(blob instanceof Blob)) {
+                        const content = typeof blob === 'object' ? JSON.stringify(blob) : String(blob);
+                        blob = new Blob([content], { type: 'application/json' });
+                    }
+                    const text = await blob.text();
+                    const meta = JSON.parse(text);
+
+                    if (!meta) throw new Error("No metadata");
+
+                    // Apply
+                    if (meta.prompt) document.getElementById('prompt').value = meta.prompt;
+                    if (meta.negative_prompt) document.getElementById('negative-prompt').value = meta.negative_prompt;
+                    if (meta.params) {
+                        if (meta.params.steps) {
+                            const el = document.getElementById('steps');
+                            if (el) { el.value = meta.params.steps; el.previousElementSibling.innerText = meta.params.steps; }
+                        }
+                        if (meta.params.cfg_scale) {
+                            const el = document.getElementById('cfg');
+                            if (el) { el.value = meta.params.cfg_scale; el.previousElementSibling.innerText = meta.params.cfg_scale; }
+                        }
+                        if (meta.params.width) document.getElementById('width').value = meta.params.width;
+                        if (meta.params.height) document.getElementById('height').value = meta.params.height;
+                        if (meta.params.sampler_name) document.getElementById('sampler').value = meta.params.sampler_name;
+                        if (meta.params.seed) document.getElementById('seed').value = meta.params.seed;
+                        // Model? Kinda hard if it's dynamic. We'll skip for now or try
+                    }
+
+                    window.notifications.show("Settings Applied!", "success");
+                    this.closeModal();
+                    this.router.navigate('generate');
+
+                } catch (e) {
+                    console.error(e);
+                    window.notifications.show("Failed to load settings: " + e.message, 'error');
+                }
+            },
+
+            async downloadGalleryImageFromModal(filename) {
+                const img = this.galleryAllFiles?.find(f => f.name === filename);
+                if (!img) return;
+                try {
+                    const blob = await window.storageManager.read(img.path);
+                    if (blob instanceof Blob) {
+                        const url = URL.createObjectURL(blob);
+                        this.downloadGalleryImage(url, filename);
+                    }
+                } catch (e) {
+                    window.notifications.show("Download Failed", 'error');
+                }
+            },
+
+            async loadGallery() {
+                const grid = document.getElementById('gallery-grid');
+                const pagination = document.getElementById('gallery-pagination');
+                const stats = document.getElementById('gallery-stats');
+                const dateList = document.getElementById('date-list');
+                const dateSearch = document.getElementById('date-search');
+
+                // Update Storage Indicator (New Feature)
+                const activeProfile = window.settingsStore.getActiveStorageProfile();
+                const indicator = document.getElementById('gallery-storage-info');
+                if (indicator && activeProfile) {
+                    indicator.classList.remove('hidden');
+                    document.getElementById('gal-store-name').innerText = activeProfile.name;
+                    document.getElementById('gal-store-type').innerText = activeProfile.type;
+                } else if (indicator) {
+                    indicator.classList.add('hidden');
+                }
+
+                if (!grid) return;
+
+                // Use Storage Manager
+                const adapter = window.storageManager.getActive();
+                if (!adapter) {
+                    grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20 flex flex-col items-center gap-2"><i class="fas fa-database text-4xl text-slate-700"></i><span>No Storage Drive Active</span><button onclick="window.app.router.navigate(\'settings\')" class="text-violet-400 hover:text-violet-300 underline">Configure Storage</button></div>';
+                    pagination.classList.add('hidden');
+                    return;
+                }
+
+                // Show Loading
+                grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20 animate-pulse"><i class="fas fa-circle-notch fa-spin text-3xl mb-4 text-violet-500"></i><br>Scanning Storage...</div>';
+                pagination.classList.add('hidden');
+                stats.classList.add('opacity-0');
+
+                try {
+                    // 1. Fetch List using StorageManager
+                    const files = await window.storageManager.list();
+
+                    if (files.length === 0) {
+                        grid.innerHTML = '<div class="col-span-full text-center text-slate-500 py-20">Storage is empty.</div>';
+                        return;
+                    }
+
+                    // 2. Filter for Images (png/webp/jpg)
+                    this.galleryAllFiles = files.filter(f => f.name.match(/\.(png|webp|jpg|jpeg)$/i)).map(f => {
+                        const parts = f.path.split('/');
+                        let folder = parts.length > 1 ? parts[parts.length - 2] : 'Unsorted';
+
+                        // Enhanced Date Parsing for YYYY/MM/DD structure
+                        if (parts.length >= 4 && /^\d{4}$/.test(parts[0]) && /^\d{2}$/.test(parts[1]) && /^\d{2}$/.test(parts[2])) {
+                            folder = `${parts[0]}-${parts[1]}-${parts[2]}`;
+                        }
+
+                        return {
+                            ...f,
+                            folder: folder
+                        };
+                    });
+
+                    // 3. Calendar Init
+                    const dateCounts = {};
+                    this.galleryAllFiles.forEach(f => {
+                        if (/^\d{4}-\d{2}-\d{2}$/.test(f.folder)) {
+                            dateCounts[f.folder] = (dateCounts[f.folder] || 0) + 1;
+                        }
+                    });
+
+                    this.availableDates = Object.keys(dateCounts).sort((a, b) => b.localeCompare(a));
+                    this.dateCounts = dateCounts;
+
+                    // Init Calendar State to show current month or today
+                    const now = new Date();
+                    this.currentCalendarYear = now.getFullYear();
+                    this.currentCalendarMonth = now.getMonth(); // 0-indexed
+
+                    this.renderCalendar();
+
+                    // 4. Update Stats
+                    document.getElementById('gal-total-count').innerText = this.galleryAllFiles.length;
+                    stats.classList.remove('opacity-0');
+
+                    // 5. Initial Render
+                    if (this.currentGalleryDate && !this.availableDates.includes(this.currentGalleryDate)) {
+                        this.currentGalleryDate = null;
+                    }
+                    this.selectDate(this.currentGalleryDate || null);
+
+                } catch (e) {
+                    console.error("Gallery Load Error", e);
+                    grid.innerHTML = `<div class="col-span-full text-center text-red-400 py-20">Failed to load gallery:<br>${e.message}</div>`;
+                }
+            },
+
             async openGalleryImage(path) {
                 // Find image in global list (safe against filter changes)
                 const img = this.galleryAllFiles?.find(f => f.path === path);
@@ -3894,9 +4158,16 @@
                 this.renderSettings();
                 this.closeModal();
                 window.notifications.show(id ? "Key Updated" : "Key Added");
+                // Refresh connection in case active key was edited
+                this.updateConnectionStatus();
             },
 
-            setActiveHordeKey(id) { window.settingsStore.setActiveHordeKey(id); this.renderSettings(); },
+            setActiveHordeKey(id) {
+                window.settingsStore.setActiveHordeKey(id);
+                this.renderSettings();
+                // Immediate refresh of connection status and popover
+                this.updateConnectionStatus();
+            },
             deleteHordeKey(id) {
                 window.dialogs.confirm("Delete Key", "Remove this key?").then(ok => {
                     if (ok) { window.settingsStore.removeHordeKey(id); this.renderSettings(); }
@@ -4327,7 +4598,7 @@
                 const names = Object.keys(wildcards).sort();
 
                 if (names.length === 0) {
-                    list.innerHTML = '<div class="text-[10px] text-slate-500 italic p-2 text-center">No wildcards created.</div>';
+                    list.innerHTML = '<div class="text-[10px] text-slate-500 italic p-2 text-center">No wildcards created. Open the Wildcards Manager to create one and get started. </div>';
                 } else {
                     list.innerHTML = names.map(name => `
                         <button onclick="window.app.insertWildcard('${name}')" class="w-full text-left px-2 py-1.5 hover:bg-white/5 rounded text-xs text-slate-300 hover:text-white transition-colors flex justify-between items-center group">
@@ -4986,28 +5257,152 @@
 
 
             async updateConnectionStatus() {
-                const alive = await window.hordeClient.getHeartbeat();
+                // Parallel fetch for speed
+                const [alive, user, sharedKey] = await Promise.all([
+                    window.hordeClient.getHeartbeat(),
+                    window.hordeClient.getUserInfo(),
+                    window.hordeClient.getSharedKeyDetails()
+                ]);
+
                 const dot = document.getElementById('horde-status-dot');
-                const kudos = document.getElementById('user-kudos');
+                this.connectionState = { alive, user, sharedKey };
 
                 if (alive) {
                     if (dot) {
-                        dot.className = "w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]";
-                        dot.title = "Horde Online";
-                    }
-                    const user = await window.hordeClient.getUserInfo();
-                    if (user) {
-                        if (kudos) kudos.innerText = `${user.username} (${user.kudos} kudos)`;
-                    } else {
-                        if (kudos) kudos.innerText = "Anonymous";
+                        dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]";
+                        dot.parentElement.title = "Online";
                     }
                 } else {
                     if (dot) {
-                        dot.className = "w-2 h-2 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)]";
-                        dot.title = "Horde Offline";
+                        dot.className = "w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)]";
+                        dot.parentElement.title = "Offline";
                     }
-                    if (kudos) kudos.innerText = "Offline";
                 }
+
+                // Update Popover if open
+                const popover = document.getElementById('connection-popover');
+                if (popover && !popover.classList.contains('hidden')) {
+                    this.renderConnectionPopover();
+                }
+            },
+
+            toggleConnectionPopover() {
+                const p = document.getElementById('connection-popover');
+                if (p) {
+                    p.classList.toggle('hidden');
+                    if (!p.classList.contains('hidden')) this.renderConnectionPopover();
+                }
+            },
+
+            openUserDetails() {
+                const state = this.connectionState;
+                if (state && state.user && state.user.id) {
+                    const baseUrl = window.settingsStore.getHordeUrl();
+                    // Remove trailing /v2 if present to avoid duplication
+                    const cleanBase = baseUrl.replace(/\/v2\/?$/, '');
+                    const url = `${cleanBase}/v2/users/${state.user.id}`;
+                    window.open(url, '_blank');
+                } else {
+                    window.notifications.show("User details not available", "warning");
+                }
+            },
+
+            openSharedKeyDetails() {
+                const state = this.connectionState;
+                if (state && state.sharedKey && state.sharedKey.id) {
+                    const baseUrl = window.settingsStore.getHordeUrl();
+                    const cleanBase = baseUrl.replace(/\/v2\/?$/, '');
+                    const url = `${cleanBase}/v2/sharedkeys/${state.sharedKey.id}`;
+                    window.open(url, '_blank');
+                } else {
+                    window.notifications.show("Shared Key details not available", "warning");
+                }
+            },
+
+            renderConnectionPopover() {
+                const state = this.connectionState || { alive: false, user: null };
+                const username = document.getElementById('popover-username');
+                const kudos = document.getElementById('popover-kudos');
+                const container = document.getElementById('popover-btn-container');
+
+                if (state.alive) {
+                    if (state.user) {
+                        username.innerText = state.user.username;
+                        kudos.innerText = `${state.user.kudos.toLocaleString()} Kudos`;
+                    } else {
+                        username.innerText = "Anonymous";
+                        kudos.innerText = "0 Kudos";
+                    }
+                } else {
+                    username.innerText = "Disconnected";
+                    kudos.innerText = "---";
+                }
+
+                // Dynamic Buttons
+                if (container) {
+                    let html = '';
+
+                    // 1. User Details
+                    html += `
+                        <button onclick="window.app.openUserDetails()" 
+                            class="flex-1 py-1.5 rounded-md bg-violet-600 hover:bg-violet-500 text-white text-[10px] font-bold transition-colors shadow-lg shadow-violet-900/20 whitespace-nowrap">
+                            User Details <i class="fas fa-external-link-alt ml-1"></i>
+                        </button>`;
+
+                    // 2. Shared Key Details (If applicable)
+                    if (state.sharedKey && state.sharedKey.id) {
+                        html += `
+                            <button onclick="window.app.openSharedKeyDetails()" 
+                                class="flex-1 py-1.5 rounded-md bg-amber-600 hover:bg-amber-500 text-white text-[10px] font-bold transition-colors shadow-lg shadow-amber-900/20 whitespace-nowrap">
+                                Shared Key <i class="fas fa-key ml-1"></i>
+                            </button>`;
+                    }
+
+                    // 3. Settings
+                    html += `
+                        <button onclick="window.app.router.navigate('settings'); window.app.toggleConnectionPopover()" 
+                            class="p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white transition-colors shrink-0" title="Settings">
+                            <i class="fas fa-cog"></i>
+                        </button>`;
+
+                    container.innerHTML = html;
+                }
+            },
+
+            renderConnectionPopoverOld() {
+                const state = this.connectionState || { alive: false, user: null };
+                const indicator = document.getElementById('modal-status-indicator');
+                const icon = document.getElementById('modal-status-icon');
+                const username = document.getElementById('modal-username');
+                const kudos = document.getElementById('modal-kudos');
+                const worker = document.getElementById('modal-worker-status');
+                const apikey = document.getElementById('modal-apikey');
+
+                if (state.alive) {
+                    indicator.className = "w-16 h-16 rounded-full bg-emerald-500/20 mx-auto flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(16,185,129,0.2)] transition-colors duration-500";
+                    icon.className = "fas fa-link text-3xl text-emerald-400";
+
+                    if (state.user) {
+                        username.innerText = state.user.username;
+                        kudos.innerText = `${state.user.kudos} Kudos`;
+                        worker.innerText = (state.user.worker_count > 0) ? `${state.user.worker_count} Active` : "Inactive";
+                        worker.className = (state.user.worker_count > 0) ? "text-xs font-bold text-emerald-400" : "text-xs font-bold text-slate-400";
+                    } else {
+                        username.innerText = "Anonymous";
+                        kudos.innerText = "0 Kudos";
+                        worker.innerText = "Unknown";
+                    }
+                } else {
+                    indicator.className = "w-16 h-16 rounded-full bg-red-500/20 mx-auto flex items-center justify-center mb-4 shadow-[0_0_20px_rgba(239,68,68,0.2)] transition-colors duration-500";
+                    icon.className = "fas fa-unlink text-3xl text-red-500";
+                    username.innerText = "Disconnected";
+                    kudos.innerText = "---";
+                    worker.innerText = "---";
+                }
+
+                // API Key Masking
+                const key = window.settingsStore.validApiKey ? window.settingsStore.apiKey : "0000000000";
+                apikey.innerText = key && key !== '0000000000' ? (key.substring(0, 10) + "...") : "Anonymous";
             },
 
             startConnectionPolling() {
@@ -5961,6 +6356,36 @@
 
         document.addEventListener('DOMContentLoaded', () => {
             window.app.init();
+        });
+    </script>
+    <!-- Generic JS Modal -->
+    <div id="app-modal"
+        class="fixed inset-0 z-[100] flex items-center justify-center hidden bg-black/80 backdrop-blur-sm p-4 transition-all duration-300">
+        <div
+            class="glass-panel w-full max-w-5xl max-h-[90vh] flex flex-col relative overflow-hidden animate-slide-up shadow-2xl rounded-2xl border border-white/10 bg-slate-900/90">
+            <!-- Header -->
+            <div class="flex justify-between items-center p-4 border-b border-white/10 shrink-0 bg-white/5">
+                <h3 id="app-modal-title"
+                    class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-violet-400 to-fuchsia-400">
+                    Modal Title</h3>
+                <button onclick="window.app.closeModal()"
+                    class="w-8 h-8 flex items-center justify-center rounded-full bg-white/5 hover:bg-white/20 text-slate-400 hover:text-white transition-all"><i
+                        class="fas fa-times text-sm"></i></button>
+            </div>
+            <!-- Content -->
+            <div id="app-modal-content" class="p-0 overflow-y-auto custom-scroll grow relative">
+                <!-- Injected HTML -->
+            </div>
+        </div>
+    </div>
+
+
+
+    <script>
+        // Init Check
+        window.addEventListener('load', () => {
+            console.log("App Loaded. Checking Version...");
+            // Optional Version Display
         });
     </script>
 </body>

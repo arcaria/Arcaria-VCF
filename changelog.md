@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.1.3] (Connection Popover & Shared Keys)
+
+### Added
+
+- **Horde Connection Popover**:
+  - Replaced the persistent connection status modal with a sleek, non-intrusive popover UI.
+  - **Shared Key Support**: Implemented automatic detection of Shared Keys via the `/sharedkeys/{key}` endpoint.
+  - **Dynamic Action Bar**: Conditional buttons that link to either "User Details" or "Shared Key" info pages based on the active credentials.
+- **Performance & Accuracy**:
+  - **Parallel Status Fetching**: Heartbeat, user info, and shared key details now fetch in parallel using `Promise.all`, significantly reducing popover lag.
+  - **Immediate Refresh**: Connection status now updates instantly when saving or switching API keys.
+  - **No-Cache Requests**: Enforced `cache: 'no-store'` for all status-related API calls to prevent stale data display.
+
+### Fixed
+
+- **URL Handling**: Corrected URL construction for User and Shared Key detail pages to handle base URLs with or without trailing version segments.
+- **Responsive Layout**: Fixed various overflow and stacking issues in the Header, Navbar, and Settings tabs for better mobile utility.
+- **Horde Status**: Removed redundant/unreliable worker status counts from the main interface to prioritize user-specific info.
+
 ## [v0.1.2] - (Multi-Storage System)
 
 ### Added
@@ -232,3 +251,4 @@ All notable changes to this project will be documented in this file.
   - **Notifications**: Custom non-blocking toast system.
   - **Dialogs**: Custom Promise-based modal dialogs replacing native alerts.
   - **Validation**: Smart inputs with character counting and Negative Prompt separation (`###`).
+
