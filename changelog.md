@@ -6,10 +6,24 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+- **Dynamic Form Manager Architecture**: Upgraded `SettingsStore` to manage multiple form schemas, enabling users to switch between different generation layouts.
+- **Form Designer Enhancements**: Integrated a full suite of management tools in the Designer, including:
+  - **Form Switcher**: Easily swap between "Basic", "Full", and custom-designed forms.
+  - **Duplication & Deletion**: Quick actions to iterate on form designs or remove unwanted ones.
+  - **Force-Sync Defaults**: Default forms (Basic/Full) are now synchronized with source code on every load to ensure consistency.
+- **Relocated Form Designer**: Moved the designer from a standalone view to a dedicated sub-tab within the **Settings** module for a more unified configuration experience.
+- **UI & UX Refinements**:
+  - **Premium Tab Navigation**: Centered settings tabs with custom icons (Cog, Brain, Network, Palette).
+  - **Responsive Design**: Improved form layout editor fitment for different screen sizes.
 - **Optimized Version Check**: Replaced the source-code parsing check with a lightweight `version.json` fetch.
   - Reduced check overhead from ~350KB to ~50 bytes.
   - Preserved environment detection logic (skips local development/localhost).
   - Improved performance on slower connections.
+
+### Fixed
+
+- **Designer Initialization**: Fixed a critical "Missing Designer DOM Elements" error caused by stale view references after relocation.
+- **Content Persistence**: Ensured newly created forms are correctly saved to `localStorage` and persist across reloads.
 
 ## [v0.1.3] (Connection Popover & Shared Keys)
 
@@ -260,5 +274,6 @@ All notable changes to this project will be documented in this file.
   - **Notifications**: Custom non-blocking toast system.
   - **Dialogs**: Custom Promise-based modal dialogs replacing native alerts.
   - **Validation**: Smart inputs with character counting and Negative Prompt separation (`###`).
+
 
 
